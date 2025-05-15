@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pallet Scanner App</title>
+    <style>
+        /* Basic styling for the app */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        h1 {
+            color: #0056b3;
+            margin-bottom: 20px;
+        }
+
+        /* Styles for the customer selection dropdown */
+        #customer-selection {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90%;
+            max-width: 300px; /* Limit width for better mobile experience */
+        }
+
+        #customer-selection label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        #customerSelect {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 1em;
+            width: 100%;
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            background-color: white;
+            appearance: none; /* Remove default dropdown arrow on some browsers */
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23000000%22%20d%3D%22M287%2C197.971L146.2%2C57.171L5.4%2C197.971C-1.8%2C205.171%2C-1.8%2C216.771%2C5.4%2C223.971C12.6%2C231.171%2C24.2%2C231.171%2C31.4%2C223.971L146.2%2C109.171L261%2C223.971C268.2%2C231.171%2C279.8%2C231.171%2C287%2C223.971C294.2%2C216.771%2C294.2%2C205.171%2C287%2C197.971Z%22%2F%3E%3C%2Fsvg%3E'); /* Custom dropdown arrow */
+            background-repeat: no-repeat;
+            background-position: right 10px top 50%;
+            background-size: 12px;
+        }
+
+        /* Styles for the video scanner area */
+        #video-container {
+            width: 90%;
+            max-width: 500px;
+            aspect-ratio: 4/3; /* Maintain aspect ratio for video */
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            background-color: black;
+            position: relative;
+            overflow: hidden; /* Hide anything outside the container */
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        video {
+            width: 100%;
+            height: 100%; /* Fill the container */
+            object-fit: cover; /* Cover the area, cropping if necessary */
+            display: block;
+        }
+
+        #scanner-overlay {
+            position: absolute;
+            top: 15%; /* Adjust vertical position of scanner box */
+            left: 15%; /* Adjust horizontal position of scanner box */
+            width: 70%; /* Size of the scanner box */
+            height: 70%; /* Size of the scanner box */
+            border: 3px solid #007bff; /* Blue border for scanner area */
+            box-sizing: border-box;
+            pointer-events: none; /* Allows clicks to pass through */
+            border-radius: 5px;
+            animation: pulse-border 1.5s infinite alternate; /* Simple animation */
+        }
+
+        @keyframes pulse-border {
+            from { border-color: #007bff; }
+            to { border-color: #00aaff; }
+        }
+
+        /* Styles for action buttons */
+        #button-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            min-width: 150px; /* Ensure buttons have a minimum width */
+        }
+
+        button:active {
+            transform: translateY(1px); /* Simple press effect */
+        }
+
+        #storeButton {
+            background-color: #28a745; /* Green */
+        }
+
+        #storeButton:hover {
+            background-color: #218838;
+        }
+
+        #removeButton {
+            background-color: #dc3545; /* Red */
+        }
+
+        #removeButton:hover {
+            background-color: #c82333;
+        }
+
+        /* Styles for result display */
+        #result {
+            margin-top: 15px;
+            font-size: 1.1em;
+            text-align: center;
+            color: #555;
+            padding: 10px 15px;
+            background-color: #e9e9e9;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            min-height: 40px; /* Ensure space for messages */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Pallet Inventory Scanner</h1>
+
+    <div id="customer-selection">
+        <label for="customerSelect">Select Customer:</label>
+        <select id="customerSelect">
+            <option value="">-- Select Customer --</option>
+            <option value="GlobalTranz">GlobalTranz</option>
+            </select>
+    </div>
+
+    <div id="video-container">
+        <video id="barcodeScanner" playsinline></video>
+        <div id="scanner-overlay"></div>
+    </div>
+
+    <div id="button-container">
+        <button id="storeButton">Store Pallet</button>
+        <button id="removeButton">Remove Pallet</button>
+    </div>
+
+    <p id="result">Scan a barcode...</p>
+
+    <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+    <script>
+        // Get references to HTML elements
+        const video = document.getElementById('barcodeScanner');
+        const resultElement = document.getElementById('result');
+        const storeButton = document.getElementById('storeButton');
+        const removeButton = document.getElementById('removeButton');
+        const customerSelect = document.getElementById('customerSelect'); // Reference to the new dropdown
+
+        // IMPORTANT: Replace this placeholder with YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
+        // Example: 'https://script.google.com/macros/s/AKfycb.../exec'
+        const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbygTMAatvB2aHVwFaWKVQnA1LvRO7XrWTmVjVkTFZBqR3UZRpQrp9gjbzWl8KkKzbkO/exec';
+
+        let codeReader; // Variable to hold the ZXing barcode reader instance
+        let selectedAction = 'store'; // Default action is to store pallets
+
+        // Function to start the barcode scanner
+        async function startScanner() {
+            try {
+                codeReader = new ZXing.BrowserMultiFormatReader();
+                // Decode from the video device (camera), using the 'video' element for display
+                await codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+                    if (result) {
+                        // A barcode was successfully scanned
+                        const scannedPallet = result.text;
+                        const customerName = customerSelect.value; // Get the currently selected customer from the dropdown
+
+                        // Validate that a customer has been selected
+                        if (customerName === "") {
+                            resultElement.textContent = 'Please select a customer first!';
+                            return; // Stop processing if no customer is selected
+                        }
+
+                        resultElement.textContent = `Scanned: ${scannedPallet} for ${customerName}`;
+                        // Send the scanned data and selected action to the Google Sheet
+                        sendToGoogleSheet(scannedPallet, customerName, selectedAction);
+                        // Optional: If you want to stop scanning after a single successful scan:
+                        // codeReader.reset();
+                    }
+                    if (err && !(err instanceof ZXing.NotFoundException)) {
+                        // Log other types of errors, but ignore "NotFoundException" which is normal when no barcode is in view
+                        console.error(err);
+                        resultElement.textContent = `Error: ${err}`;
+                    }
+                });
+                console.log('Scanner started.');
+            } catch (error) {
+                // Handle errors if the camera cannot be started
+                console.error('Error starting scanner:', error);
+                resultElement.textContent = 'Error: Could not start camera. Please ensure camera access is granted.';
+            }
+        }
+
+        // Function to send data to the Google Sheet via the Apps Script web app
+        async function sendToGoogleSheet(palletNumber, customerName, action) {
+            resultElement.textContent = `Processing ${action} for: ${palletNumber} (${customerName})...`;
+            try {
+                // Corrected fetch call syntax
+                const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+                    method: 'POST', // We use POST to send data
+                    mode: 'no-cors', // Important for Apps Script. Prevents CORS errors but means we can't read script's response directly.
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded', // Standard for sending form data
+                    },
+                    // Construct the body with our parameters
+                    body: `palletNumber=${palletNumber}&customer=${customerName}&action=${action}`,
+                });
+
+                // Since mode is 'no-cors', we can't read the actual response from Apps Script.
+                // We'll optimistically update the UI to indicate success and prompt user to check sheet.
+                resultElement.textContent = `${action === 'store' ? 'Stored' : 'Removed'}: ${palletNumber} for ${customerName} (Check Sheet)`;
+
+                // Optional: Re-enable scanner if it was stopped after a scan (commented out above)
+                // if (codeReader.is = false) { startScanner(); }
+
+            } catch (error) {
+                console.error('Error sending to Google Sheet:', error);
+                // Ensure the error message is fully displayed
+                resultElement.textContent = `Failed to send data for ${palletNumber}. Error: ${error.message}`;
+            }
+        }
+
+        // Event listener for the "Store Pallet" button
+        storeButton.addEventListener('click', () => {
+            selectedAction = 'store';
+            resultElement.textContent = 'Ready to scan for STORAGE...';
+        });
+
+        // Event listener for the "Remove Pallet" button
+        removeButton.addEventListener('click', () => {
+            selectedAction = 'remove';
+            resultElement.textContent = 'Ready to scan for REMOVAL...';
+        });
+
+        // Start the scanner when the page finishes loading
+        window.addEventListener('load', startScanner);
+
+        // Clean up: Stop the scanner when the user leaves the page to release camera resources
+        window.addEventListener('beforeunload', () => {
+            if (codeReader) {
+                codeReader.reset();
+            }
+        });
+    </script>
+</body>
+</html>
