@@ -209,6 +209,7 @@
         // Function to initialize and start the barcode scanner using the device camera
         async function startScanner() {
             try {
+                resultElement.textContent = 'Initializing camera...'; // Immediate feedback
                 codeReader = new ZXing.BrowserMultiFormatReader();
                 // Decode from the video device (camera), using the 'video' element for displaying the feed.
                 // 'null' asks the library to select the optimal camera.
@@ -219,4 +220,83 @@
                         const customerName = customerSelect.value; // Get the currently selected customer from the dropdown
 
                         // Validate that a customer has been selected before processing the scan
-                        if (
+                        if (customerName === "") { // THIS IS WHERE YOUR PREVIOUS SCRIPT WAS CUT OFF
+                            resultElement.textContent = 'Please select a customer first!';
+                            return; // Stop processing if no customer is selected
+                        }
+
+                        // Update the UI to show the scanned data
+                        resultElement.textContent = `Scanned: ${scannedPallet} for ${customerName}`;
+                        // Send the scanned data and the currently selected action to the Google Sheet backend
+                        sendToGoogleSheet(scannedPallet, customerName, selectedAction);
+
+                        // Optional: Uncomment the line below if you want the scanner to stop after each successful scan.
+                        // You'd need to re-call startScanner() or reset the codeReader to scan again.
+                        // codeReader.reset();
+                    }
+                    if (err && !(err instanceof ZXing.NotFoundException)) {
+                        // Log other types of errors, but ignore "NotFoundException" which is normal when no barcode is currently in view
+                        console.error(err);
+                        resultElement.textContent = `Error: ${err.message || err}`; // Display the error message
+                    }
+                });
+                console.log('Scanner started.');
+                resultElement.textContent = 'Scanner ready. Select customer and scan.'; // Feedback on success
+            } catch (error) {
+                console.error('Error starting scanner:', error);
+                // Make the error message very prominent and clear to the user
+                resultElement.textContent = `CRITICAL ERROR: Camera failed. ${error.name || ''}: ${error.message || error}. Please ensure browser has camera access.`;
+            }
+        }
+
+        // Function to send the scanned data to the Google Apps Script web app
+        async function sendToGoogleSheet(palletNumber, customerName, action) {
+            resultElement.textContent = `Processing ${action} for: ${palletNumber} (${customerName})...`;
+            try {
+                // Use the fetch API to send a POST request to the Google Apps Script URL
+                const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+                    method: 'POST', // We use POST to send data to the script
+                    mode: 'no-cors', // Important for Apps Script. This prevents CORS errors but means we can't directly read the script's detailed response (only if it succeeded).
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded', // Standard header for sending form data
+                    },
+                    // Construct the request body with our parameters (palletNumber, customer, action)
+                    body: `palletNumber=${encodeURIComponent(palletNumber)}&customer=${encodeURIComponent(customerName)}&action=${encodeURIComponent(action)}`,
+                });
+
+                // Since 'mode: no-cors' is used, we can't read the actual HTTP response status or body from Apps Script.
+                // We'll optimistically update the UI assuming the request was sent successfully,
+                // and prompt the user to check the Google Sheet for confirmation.
+                resultElement.textContent = `${action === 'store' ? 'Stored' : 'Removed'}: ${palletNumber} for ${customerName} (Check Sheet)`;
+
+            } catch (error) {
+                // Catch and display any errors that occur during the fetch request (e.g., network issues)
+                console.error('Error sending to Google Sheet:', error);
+                resultElement.textContent = `Failed to send data for ${palletNumber}. Error: ${error.message}`;
+            }
+        }
+
+        // Event listener for the "Store Pallet" button: sets the action to 'store'
+        storeButton.addEventListener('click', () => {
+            selectedAction = 'store';
+            resultElement.textContent = 'Ready to scan for STORAGE...';
+        });
+
+        // Event listener for the "Remove Pallet" button: sets the action to 'remove'
+        removeButton.addEventListener('click', () => {
+            selectedAction = 'remove';
+            resultElement.textContent = 'Ready to scan for REMOVAL...';
+        });
+
+        // Start the scanner automatically when the web page finishes loading
+        window.addEventListener('load', startScanner);
+
+        // Clean up: Stop the scanner and release camera resources when the user navigates away from the page
+        window.addEventListener('beforeunload', () => {
+            if (codeReader) {
+                codeReader.reset();
+            }
+        });
+    </script>
+</body>
+</html>
