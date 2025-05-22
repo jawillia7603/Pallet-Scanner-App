@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>22000 SC MC</title>
 
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="novo_logo_(bug).png"> 
-    <link rel="icon" href="novo_logo_(bug).png" type="image/png"> 
+    <link rel="manifest" href="manifest.json"> [cite: 2, 4]
+    <link rel="apple-touch-icon" href="novo_logo_(bug).png"> [cite: 2, 4]
+    <link rel="icon" href="novo_logo_(bug).png" type="image/png"> [cite: 2, 4]
 
     <style>
         /* Basic styling for the app */
@@ -16,9 +16,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: flex-start; /* Align to top for more space */
             min-height: 100vh;
-            padding-top: 20px;
+            padding-top: 20px; /* Add some padding at the top */
             margin: 0;
             background-color: #f4f4f4;
             color: #333;
@@ -34,7 +34,7 @@
 
         /* Styling for the main heading */
         h1 {
-            color: #192B55; 
+            color: #192B55; /* Novo Logistics Dark Blue */
             margin-bottom: 20px;
         }
 
@@ -296,7 +296,7 @@
                         // Barcode scanned successfully, process it and then STOP scanner
                         const scannedPallet = result.text;
                         const customerName = customerSelect.value;
-                        const caseCount = parseInt(caseCountInput.value, 10);
+                        const caseCount = parseInt(caseCountInput.value, 10); // Get case count
 
                         if (customerName === "") {
                             resultElement.textContent = 'Please select a customer first!';
@@ -312,7 +312,7 @@
                             codeReader.reset();
                             console.log('Scanner stopped after successful scan.');
                         }
-
+                        
                         resultElement.textContent = `Scanned: ${scannedPallet} for <span class="math-inline">\{customerName\} \(</span>{caseCount} cases). Processing...`;
                         sendToGoogleSheet(scannedPallet, customerName, caseCount, selectedAction);
                     }
@@ -373,7 +373,7 @@
         // Initialize: fetch customers on page load. Scanner only starts when a button is clicked.
         window.addEventListener('load', async () => {
             await fetchCustomers(); // Fetch customers first
-            resultElement.textContent = 'Select customer, enter cases, and click a button to start scanning.'; // Initial message
+            startScanner();         // Then start the scanner
         });
 
         // Clean up scanner resources on page unload
