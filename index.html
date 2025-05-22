@@ -8,113 +8,100 @@
     <link rel="apple-touch-icon" href="novo_logo_(bug).jpg"> 
     <link rel="icon" href="novo_logo_(bug).jpg" type="image/jpeg">
     
-
     <style>
-        /* Basic styling for the app to center content and set background */
+        /* Basic styling for the app */
         body {
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start; /* Align to top for more space */
             min-height: 100vh;
+            padding-top: 20px; /* Add some padding at the top */
             margin: 0;
             background-color: #f4f4f4;
             color: #333;
         }
 
-        /* Styling for the main heading */
         h1 {
             color: #0056b3;
             margin-bottom: 20px;
         }
 
-        /* Styles for the customer selection dropdown container */
-        #customer-selection {
+        /* Group for form inputs like customer select and case count */
+        .input-group {
             margin-bottom: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
             width: 90%;
-            max-width: 300px; /* Limit width for better mobile experience */
+            max-width: 300px;
         }
-
-        /* Styles for the customer dropdown label */
-        #customer-selection label {
+        .input-group label {
             margin-bottom: 5px;
             font-weight: bold;
             color: #555;
         }
-
-        /* Styles for the customer dropdown select element */
-        #customerSelect {
+        .input-group select, .input-group input[type="number"] {
             padding: 10px;
             border: 1px solid #ced4da;
             border-radius: 5px;
             font-size: 1em;
             width: 100%;
-            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            box-sizing: border-box; /* Include padding and border in width */
             background-color: white;
-            appearance: none; /* Remove default dropdown arrow on some browsers */
-            /* Custom dropdown arrow using SVG data URI */
+        }
+        /* Custom dropdown arrow for select */
+        .input-group select {
+            appearance: none;
             background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23000000%22%20d%3D%22M287%2C197.971L146.2%2C57.171L5.4%2C197.971C-1.8%2C205.171%2C-1.8%2C216.771%2C5.4%2C223.971C12.6%2C231.171%2C24.2%2C231.171%2C31.4%2C223.971L146.2%2C109.171L261%2C223.971C268.2%2C231.171%2C279.8%2C231.171%2C287%2C223.971C294.2%2C216.771%2C294.2%2C205.171%2C287%2C197.971Z%22%2F%3E%3C%2Fsvg%3E');
             background-repeat: no-repeat;
             background-position: right 10px top 50%;
             background-size: 12px;
         }
 
-        /* Styles for the video scanner area container */
+        /* Video scanner area */
         #video-container {
             width: 90%;
             max-width: 500px;
-            aspect-ratio: 4/3; /* Maintain aspect ratio for video feed */
+            aspect-ratio: 4/3;
             margin-bottom: 20px;
             border: 1px solid #ddd;
-            background-color: black; /* Background when video isn't playing */
+            background-color: black;
             position: relative;
-            overflow: hidden; /* Hide anything outside the container */
+            overflow: hidden;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-
-        /* Styles for the video element displaying the camera feed */
         video {
             width: 100%;
-            height: 100%; /* Fill the container */
-            object-fit: cover; /* Cover the area, cropping if necessary */
+            height: 100%;
+            object-fit: cover;
             display: block;
         }
-
-        /* Styles for the visual scanner overlay box */
         #scanner-overlay {
             position: absolute;
-            top: 15%; /* Adjust vertical position of scanner box */
-            left: 15%; /* Adjust horizontal position of scanner box */
-            width: 70%; /* Size of the scanner box */
-            height: 70%; /* Size of the scanner box */
-            border: 3px solid #007bff; /* Blue border for scanner area */
+            top: 15%; left: 15%;
+            width: 70%; height: 70%;
+            border: 3px solid #007bff;
             box-sizing: border-box;
-            pointer-events: none; /* Allows clicks to pass through */
+            pointer-events: none;
             border-radius: 5px;
-            animation: pulse-border 1.5s infinite alternate; /* Simple pulse animation for the border */
+            animation: pulse-border 1.5s infinite alternate;
         }
-
-        /* Keyframes for the pulse animation */
         @keyframes pulse-border {
             from { border-color: #007bff; }
             to { border-color: #00aaff; }
         }
 
-        /* Styles for the action buttons container */
+        /* Action buttons */
         #button-container {
             display: flex;
             gap: 15px;
             margin-bottom: 20px;
-            flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+            flex-wrap: wrap;
             justify-content: center;
         }
-
-        /* Base styles for all buttons */
         button {
             padding: 12px 25px;
             font-size: 1.1em;
@@ -125,33 +112,25 @@
             color: white;
             font-weight: bold;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            min-width: 150px; /* Ensure buttons have a minimum width */
+            min-width: 150px;
         }
-
-        /* Active state for buttons (on press) */
         button:active {
-            transform: translateY(1px); /* Simple press effect */
+            transform: translateY(1px);
         }
-
-        /* Specific styles for the "Store Pallet" button */
-        #storeButton {
+        #putawayButton {
             background-color: #28a745; /* Green */
         }
-
-        #storeButton:hover {
+        #putawayButton:hover {
             background-color: #218838;
         }
-
-        /* Specific styles for the "Remove Pallet" button */
-        #removeButton {
+        #shipButton {
             background-color: #dc3545; /* Red */
         }
-
-        #removeButton:hover {
+        #shipButton:hover {
             background-color: #c82333;
         }
 
-        /* Styles for the result display area */
+        /* Result display area */
         #result {
             margin-top: 15px;
             font-size: 1.1em;
@@ -162,30 +141,29 @@
             border-radius: 8px;
             width: 90%;
             max-width: 500px;
-            min-height: 40px; /* Ensure space for messages */
+            min-height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        /* NEW CSS for the visual flash overlay */
+        /* Visual flash overlay */
         #flash-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 255, 0, 0.4); /* Semi-transparent green flash */
-            opacity: 0; /* Start hidden */
-            visibility: hidden; /* Start hidden */
-            transition: opacity 0.1s ease-out, visibility 0.1s ease-out; /* Quick transition for flash */
-            z-index: 9999; /* Ensure it's on top of everything */
-            pointer-events: none; /* Allow clicks to pass through when not active */
+            background-color: rgba(0, 255, 0, 0.4); /* Semi-transparent green */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.1s ease-out, visibility 0.1s ease-out;
+            z-index: 9999;
+            pointer-events: none;
         }
-
         #flash-overlay.active {
-            opacity: 1; /* Make visible */
+            opacity: 1;
             visibility: visible;
         }
     </style>
@@ -195,12 +173,16 @@
 
     <h1>Pallet Inventory Scanner</h1>
 
-    <div id="customer-selection">
+    <div class="input-group">
         <label for="customerSelect">Select Customer:</label>
         <select id="customerSelect">
-            <option value="">-- Select Customer --</option>
-            <option value="GlobalTranz">GlobalTranz</option>
-            </select>
+            <option value="">Loading customers...</option>
+        </select>
+    </div>
+
+    <div class="input-group">
+        <label for="caseCountInput">Case Count:</label>
+        <input type="number" id="caseCountInput" placeholder="Enter case count" min="1" value="1">
     </div>
 
     <div id="video-container">
@@ -209,35 +191,33 @@
     </div>
 
     <div id="button-container">
-        <button id="storeButton">Store Pallet</button>
-        <button id="removeButton">Remove Pallet</button>
+        <button id="putawayButton">Put Away Pallet</button>
+        <button id="shipButton">Ship Pallet</button>
     </div>
 
     <p id="result">Scan a barcode...</p>
 
     <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
-
     <script>
         // Get references to HTML elements
         const video = document.getElementById('barcodeScanner');
         const resultElement = document.getElementById('result');
-        const storeButton = document.getElementById('storeButton');
-        const removeButton = document.getElementById('removeButton');
-        const customerSelect = document.getElementById('customerSelect'); // Reference to the customer dropdown
-        const flashOverlay = document.getElementById('flash-overlay'); // NEW: Reference to the flash overlay element
+        const putawayButton = document.getElementById('putawayButton');
+        const shipButton = document.getElementById('shipButton');
+        const customerSelect = document.getElementById('customerSelect');
+        const caseCountInput = document.getElementById('caseCountInput');
+        const flashOverlay = document.getElementById('flash-overlay');
 
-        // IMPORTANT: Replace this placeholder with YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
+        // IMPORTANT: Replace this with YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
         // This URL acts as the API endpoint for your Google Sheet.
-        // Example: 'https://script.google.com/macros/s/AKfycb.../exec'
-        const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbygTMAatvB2aHVwFaWKVQnA1LvRO7XrWTmVjVkTFZBqR3UZRpQrp9gjbzWl8KkKzbkO/exec'; // Your actual URL here
+        const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbygTMAatvB2aHVwFaWKVQnA1LvRO7XrWTmVjVkTFZBqR3UZRpQrp9gjbzWl8KkKzbkO/exec'; // Your actual /exec URL here
 
-        let codeReader; // Variable to hold the ZXing barcode reader instance
-        let selectedAction = 'store'; // Default action when app starts is to store pallets
+        let codeReader;
+        let selectedAction = 'putaway'; // Default action is putaway
 
-        // NEW: Function to play a simple beep sound
+        // Function to play a simple beep sound
         function playBeep() {
             try {
-                // Check if AudioContext is supported
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 if (AudioContext) {
                     const audioCtx = new AudioContext();
@@ -247,14 +227,13 @@
                     oscillator.connect(gainNode);
                     gainNode.connect(audioCtx.destination);
 
-                    oscillator.type = 'sine'; // Sine wave for a clear beep
-                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A4 note
-                    gainNode.gain.setValueAtTime(1, audioCtx.currentTime); // Max volume
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
 
                     oscillator.start(audioCtx.currentTime);
-                    // Fade out the sound quickly
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3); // Fade out
-                    oscillator.stop(audioCtx.currentTime + 0.3); // Stop after 0.3 seconds
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    oscillator.stop(audioCtx.currentTime + 0.3);
                 } else {
                     console.warn("AudioContext not supported, cannot play beep.");
                 }
@@ -263,109 +242,129 @@
             }
         }
 
-        // NEW: Function to trigger the visual flash effect
+        // Function to trigger the visual flash effect
         function triggerFlash() {
-            flashOverlay.classList.add('active'); // Add 'active' class to show flash
+            flashOverlay.classList.add('active');
             setTimeout(() => {
-                flashOverlay.classList.remove('active'); // Remove 'active' class to hide flash after a short delay
+                flashOverlay.classList.remove('active');
             }, 150); // Flash for 150 milliseconds
         }
 
+        // Function to fetch customers dynamically from Google Sheet
+        async function fetchCustomers() {
+            customerSelect.innerHTML = '<option value="">Loading customers...</option>';
+            try {
+                // Use GET request to fetch customers
+                const response = await fetch(`${GOOGLE_SHEET_WEB_APP_URL}?action=getCustomers`);
+                // Parse response as JSON (no 'no-cors' needed for GET, so we can read response)
+                const data = await response.json();
 
-        // Function to initialize and start the barcode scanner using the device camera
+                if (data.status === "success" && data.data) {
+                    customerSelect.innerHTML = '<option value="">-- Select Customer --</option>'; // Reset with default option
+                    data.data.forEach(customer => {
+                        const option = document.createElement('option');
+                        option.value = customer;
+                        option.textContent = customer;
+                        customerSelect.appendChild(option);
+                    });
+                } else {
+                    customerSelect.innerHTML = '<option value="">Error loading customers</option>';
+                    resultElement.textContent = `Error: ${data.message || 'Failed to load customers.'}`;
+                }
+            } catch (error) {
+                console.error('Error fetching customers:', error);
+                customerSelect.innerHTML = '<option value="">Network error</option>';
+                resultElement.textContent = `Network error loading customers: ${error.message}`;
+            }
+        }
+
+        // Function to initialize and start the barcode scanner
         async function startScanner() {
             try {
-                resultElement.textContent = 'Initializing camera...'; // Immediate feedback
+                resultElement.textContent = 'Initializing camera...';
                 codeReader = new ZXing.BrowserMultiFormatReader();
-                // Decode from the video device (camera), using the 'video' element for displaying the feed.
-                // 'null' asks the library to select the optimal camera.
                 await codeReader.decodeFromVideoDevice(null, video, (result, err) => {
                     if (result) {
-                        // A barcode was successfully scanned
-                        const scannedPallet = result.text; // The decoded barcode text
-                        const customerName = customerSelect.value; // Get the currently selected customer from the dropdown
+                        const scannedPallet = result.text;
+                        const customerName = customerSelect.value;
+                        const caseCount = parseInt(caseCountInput.value, 10); // Get case count
 
-                        // Validate that a customer has been selected before processing the scan
+                        // Input validation for customer and case count
                         if (customerName === "") {
                             resultElement.textContent = 'Please select a customer first!';
-                            return; // Stop processing if no customer is selected
+                            return;
+                        }
+                        if (isNaN(caseCount) || caseCount <= 0) {
+                            resultElement.textContent = 'Please enter a valid case count (>0)!';
+                            return;
                         }
 
-                        // Update the UI to show the scanned data
-                        resultElement.textContent = `Scanned: ${scannedPallet} for ${customerName}`;
-                        // Send the scanned data and the currently selected action to the Google Sheet backend
-                        sendToGoogleSheet(scannedPallet, customerName, selectedAction);
-
-                        // Optional: Uncomment the line below if you want the scanner to stop after each successful scan.
-                        // You'd need to re-call startScanner() or reset the codeReader to scan again.
-                        // codeReader.reset();
+                        resultElement.textContent = `Scanned: ${scannedPallet} for ${customerName} (${caseCount} cases)`;
+                        sendToGoogleSheet(scannedPallet, customerName, caseCount, selectedAction); // Pass caseCount
                     }
                     if (err && !(err instanceof ZXing.NotFoundException)) {
-                        // Log other types of errors, but ignore "NotFoundException" which is normal when no barcode is currently in view
                         console.error(err);
-                        resultElement.textContent = `Error: ${err.message || err}`; // Display the error message
+                        resultElement.textContent = `Error: ${err.message || err}`;
                     }
                 });
                 console.log('Scanner started.');
-                resultElement.textContent = 'Scanner ready. Select customer and scan.'; // Feedback on success
+                resultElement.textContent = 'Scanner ready. Select customer, enter cases, and scan.';
             } catch (error) {
                 console.error('Error starting scanner:', error);
-                // Make the error message very prominent and clear to the user
                 resultElement.textContent = `CRITICAL ERROR: Camera failed. ${error.name || ''}: ${error.message || error}. Please ensure browser has camera access.`;
             }
         }
 
-        // Function to send the scanned data to the Google Apps Script web app
-        async function sendToGoogleSheet(palletNumber, customerName, action) {
-            resultElement.textContent = `Processing ${action} for: ${palletNumber} (${customerName})...`;
+        // Function to send data to the Google Apps Script web app
+        async function sendToGoogleSheet(palletNumber, customerName, caseCount, action) {
+            resultElement.textContent = `Processing ${action} for: ${palletNumber} (${customerName}, ${caseCount} cases)...`;
             try {
-                // Use the fetch API to send a POST request to the Google Apps Script URL
                 const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
-                    method: 'POST', // We use POST to send data to the script
-                    mode: 'no-cors', // Important for Apps Script. This prevents CORS errors but means we can't directly read the script's detailed response (only if it succeeded).
+                    method: 'POST',
+                    mode: 'no-cors', // Still needed for POST requests to Apps Script
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded', // Standard header for sending form data
+                        'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    // Construct the request body with our parameters (palletNumber, customer, action)
-                    body: `palletNumber=${encodeURIComponent(palletNumber)}&customer=${encodeURIComponent(customerName)}&action=${encodeURIComponent(action)}`,
+                    // Include all parameters in the body
+                    body: `palletNumber=${encodeURIComponent(palletNumber)}&customer=${encodeURIComponent(customerName)}&caseCount=${encodeURIComponent(caseCount)}&action=${encodeURIComponent(action)}`,
                 });
 
-                // Since 'mode: no-cors' is used, we can't read the actual HTTP response status or body from Apps Script.
-                // We'll optimistically update the UI assuming the request was sent successfully,
-                // and prompt the user to check the Google Sheet for confirmation.
-                resultElement.textContent = `${action === 'store' ? 'Stored' : 'Removed'}: ${palletNumber} for ${customerName} (Check Sheet)`;
+                // Since 'no-cors' is used, we can't read the direct response from Apps Script for POST requests.
+                // We'll optimistically update the UI.
+                resultElement.textContent = `${action === 'putaway' ? 'Put away' : 'Shipped'}: ${palletNumber} for ${customerName} (${caseCount} cases). Check Sheet.`;
 
                 playBeep();     // Trigger beep on successful transmission attempt
                 triggerFlash(); // Trigger flash on successful transmission attempt
 
             } catch (error) {
-                // Catch and display any errors that occur during the fetch request (e.g., network issues)
                 console.error('Error sending to Google Sheet:', error);
                 resultElement.textContent = `Failed to send data for ${palletNumber}. Error: ${error.message}`;
             }
         }
 
-        // Event listener for the "Store Pallet" button: sets the action to 'store'
-        storeButton.addEventListener('click', () => {
-            selectedAction = 'store';
-            resultElement.textContent = 'Ready to scan for STORAGE...';
+        // Event listeners for action buttons
+        putawayButton.addEventListener('click', () => {
+            selectedAction = 'putaway';
+            resultElement.textContent = 'Ready to scan for PUT AWAY...';
         });
 
-        // Event listener for the "Remove Pallet" button: sets the action to 'remove'
-        removeButton.addEventListener('click', () => {
-            selectedAction = 'remove';
-            resultElement.textContent = 'Ready to scan for REMOVAL...';
+        shipButton.addEventListener('click', () => {
+            selectedAction = 'ship';
+            resultElement.textContent = 'Ready to scan for SHIPMENT...';
         });
 
-        // Start the scanner automatically when the web page finishes loading
-        window.addEventListener('load', startScanner);
+        // Initialize: fetch customers, then start scanner when page loads
+        window.addEventListener('load', async () => {
+            await fetchCustomers(); // Fetch customers first
+            startScanner();         // Then start the scanner
+        });
 
-        // Clean up: Stop the scanner and release camera resources when the user navigates away from the page
-        window.addEventListener('beforeunload', () => {
-            if (codeReader) {
-                codeReader.reset();
-            }
-        });
-    </script>
+        // Clean up scanner resources on page unload
+        window.addEventListener('beforeunload', () => {
+            if (codeReader) {
+                codeReader.reset();
+            }
+        });
+    </script>
 </body>
 </html>
