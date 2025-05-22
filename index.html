@@ -11,7 +11,7 @@
     <style>
         /* Basic styling for the app */
         body {
-            font-family: Arial, sans-serif; /* Keep Arial for now; can update to brand fonts later */
+            font-family: Arial, sans-serif; /* Keeping Arial as general sans-serif; brand fonts (Montserrat, Roboto) can be integrated via Google Fonts */ [cite: 8]
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -23,9 +23,16 @@
             color: #333;
         }
 
-        /* Styling for the main heading (updated color) */
+        /* Logo styling for display within the app */
+        #app-logo {
+            width: 80px; /* Adjust size as needed, e.g., 1 inch minimum for readability */ [cite: 16]
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        /* Styling for the main heading (updated to Novo Logistics Dark Blue) */
         h1 {
-            color: #192B55; /* Novo Logistics Dark Blue */
+            color: #192B55; /* Novo Logistics Dark Blue from brand palette */ [cite: 26]
             margin-bottom: 20px;
         }
 
@@ -41,7 +48,7 @@
         .input-group label {
             margin-bottom: 5px;
             font-weight: bold;
-            color: #192B55; /* Novo Logistics Dark Blue */
+            color: #192B55; /* Novo Logistics Dark Blue */ [cite: 26]
         }
         .input-group select, .input-group input[type="number"] {
             padding: 10px;
@@ -49,13 +56,13 @@
             border-radius: 5px;
             font-size: 1em;
             width: 100%;
-            box-sizing: border-box; /* Include padding and border in width */
+            box-sizing: border-box;
             background-color: white;
         }
-        /* Custom dropdown arrow for select (updated color) */
+        /* Custom dropdown arrow for select (updated to Novo Logistics Dark Blue) */
         .input-group select {
             appearance: none;
-            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23192B55%22%20d%3D%22M287%2C197.971L146.2%2C57.171L5.4%2C197.971C-1.8%2C205.171%2C-1.8%2C216.771%2C5.4%2C223.971C12.6%2C231.171%2C24.2%2C231.171%2C31.4%2C223.971L146.2%2C109.171L261%2C223.971C268.2%2C231.171%2C279.8%2C231.171%2C287%2C223.971C294.2%2C216.771%2C294.2%2C205.171%2C287%2C197.971Z%22%2F%3E%3C%2Fsvg%3E'); /* Updated to Novo Dark Blue */
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23192B55%22%20d%3D%22M287%2C197.971L146.2%2C57.171L5.4%2C197.971C-1.8%2C205.171%2C-1.8%2C216.771%2C5.4%2C223.971C12.6%2C231.171%2C24.2%2C231.171%2C31.4%2C223.971L146.2%2C109.171L261%2C223.971C268.2%2C231.171%2C279.8%2C231.171%2C287%2C223.971C294.2%2C216.771%2C294.2%2C205.171%2C287%2C197.971Z%22%2F%3E%3C%2Fsvg%3E'); /* Updated to Novo Dark Blue */ [cite: 26]
             background-repeat: no-repeat;
             background-position: right 10px top 50%;
             background-size: 12px;
@@ -84,18 +91,18 @@
             position: absolute;
             top: 15%; left: 15%;
             width: 70%; height: 70%;
-            border: 3px solid #2850A0; /* Novo Logistics Medium Blue */
+            border: 3px solid #2850A0; /* Novo Logistics Medium Blue */ [cite: 26]
             box-sizing: border-box;
             pointer-events: none;
             border-radius: 5px;
             animation: pulse-border 1.5s infinite alternate;
         }
         @keyframes pulse-border {
-            from { border-color: #2850A0; } /* Novo Medium Blue */
-            to { border-color: #F37121; } /* Novo Orange */
+            from { border-color: #2850A0; } /* Novo Medium Blue */ [cite: 26]
+            to { border-color: #F37121; } /* Novo Orange */ [cite: 26]
         }
 
-        /* Action buttons (updated colors) */
+        /* Action buttons (updated to company colors) */
         #button-container {
             display: flex;
             gap: 15px;
@@ -119,16 +126,16 @@
             transform: translateY(1px);
         }
         #putawayButton {
-            background-color: #28a745; /* Green - this isn't a brand color, but functional */
+            background-color: #192B55; /* Novo Logistics Dark Blue */ [cite: 26]
         }
         #putawayButton:hover {
-            background-color: #218838;
+            background-color: #2850A0; /* Novo Logistics Medium Blue */ [cite: 26]
         }
         #shipButton {
-            background-color: #dc3545; /* Red - this isn't a brand color, but functional */
+            background-color: #F37121; /* Novo Logistics Orange */ [cite: 26]
         }
         #shipButton:hover {
-            background-color: #c82333;
+            background-color: #e0681d; /* Slightly darker orange for hover, based on brand orange */
         }
 
         /* Result display area */
@@ -149,14 +156,14 @@
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        /* Visual flash overlay (can change color to brand green if desired, but bright green is common for success) */
+        /* Visual flash overlay (kept bright green for strong success cue, but can be customized) */
         #flash-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 255, 0, 0.4); /* Keep bright green for success cue */
+            background-color: rgba(0, 255, 0, 0.4); /* Bright green for success */
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.1s ease-out, visibility 0.1s ease-out;
@@ -171,6 +178,8 @@
 </head>
 <body>
     <div id="flash-overlay"></div>
+
+    <img id="app-logo" src="novo_logo_(bug).png" alt="Novo Logistics Logo"> [cite: 3]
 
     <h1>22000 SC MC Pallet Scanner</h1>
 
@@ -302,7 +311,7 @@
                             console.log('Scanner stopped after successful scan.');
                         }
                         
-                        resultElement.textContent = `Scanned: ${scannedPallet} for <span class="math-inline">\{customerName\} \(</span>{caseCount} cases). Processing...`;
+                        resultElement.textContent = `Scanned: ${scannedPallet} for ${customerName} (${caseCount} cases). Processing...`;
                         sendToGoogleSheet(scannedPallet, customerName, caseCount, selectedAction);
                     }
                     if (err && !(err instanceof ZXing.NotFoundException)) {
@@ -327,10 +336,10 @@
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `palletNumber=<span class="math-inline">\{encodeURIComponent\(palletNumber\)\}&customer\=</span>{encodeURIComponent(customerName)}&caseCount=<span class="math-inline">\{encodeURIComponent\(caseCount\)\}&action\=</span>{encodeURIComponent(action)}`,
+                    body: `palletNumber=${encodeURIComponent(palletNumber)}&customer=${encodeURIComponent(customerName)}&caseCount=${encodeURIComponent(caseCount)}&action=${encodeURIComponent(action)}`,
                 });
 
-                resultElement.textContent = `${action === 'putaway' ? 'Put away' : 'Shipped'}: ${palletNumber} for <span class="math-inline">\{customerName\} \(</span>{caseCount} cases). Check Sheet.`;
+                resultElement.textContent = `${action === 'putaway' ? 'Put away' : 'Shipped'}: ${palletNumber} for ${customerName} (${caseCount} cases). Check Sheet.`;
                 playBeep();
                 triggerFlash();
 
