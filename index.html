@@ -358,14 +358,14 @@
         });
 
         // Start the scanner automatically when the web page finishes loading
-        window.addEventListener('load', startScanner);
+        window.addEventListener('load', startScanner);
 
-        // Clean up: Stop the scanner and release camera resources when the user navigates away from the page
-        window.addEventListener('beforeunload', () => {
-            if (codeReader) {
-                codeReader.reset();
-            }
-        });
-    </script>
+        // Clean up: Stop the scanner and release camera resources when the user navigates away from the page
+        window.addEventListener('beforeunload', () => {
+            if (codeReader) {
+                codeReader.reset();
+            }
+        });
+    </script>
 </body>
 </html>
