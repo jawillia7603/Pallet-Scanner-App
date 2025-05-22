@@ -182,8 +182,7 @@
 
     <div class="input-group">
         <label for="caseCountInput">Case Count:</label>
-        <input type="number" id="caseCountInput" placeholder="Enter case count" min="1" value="1">
-    </div>
+        <input type="number" id="caseCountInput" placeholder="Enter case count" min="1"> </div>
 
     <div id="video-container">
         <video id="barcodeScanner" playsinline></video>
@@ -256,7 +255,7 @@
             try {
                 // Use GET request to fetch customers
                 const response = await fetch(`${GOOGLE_SHEET_WEB_APP_URL}?action=getCustomers`);
-                // Parse response as JSON (no 'no-cors' needed for GET, so we can read response)
+                // Parse response as JSON
                 const data = await response.json();
 
                 if (data.status === "success" && data.data) {
@@ -294,6 +293,7 @@
                             resultElement.textContent = 'Please select a customer first!';
                             return;
                         }
+                        // Changed validation for case count to allow empty, but still require > 0 for action
                         if (isNaN(caseCount) || caseCount <= 0) {
                             resultElement.textContent = 'Please enter a valid case count (>0)!';
                             return;
