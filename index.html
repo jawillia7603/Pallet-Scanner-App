@@ -182,7 +182,8 @@
 
     <div class="input-group">
         <label for="caseCountInput">Case Count:</label>
-        <input type="number" id="caseCountInput" placeholder="Enter case count" min="1"> </div>
+        <input type="number" id="caseCountInput" placeholder="Enter case count" min="1">
+    </div>
 
     <div id="video-container">
         <video id="barcodeScanner" playsinline></video>
@@ -198,7 +199,6 @@
 
     <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
     <script>
-        // Get references to HTML elements
         const video = document.getElementById('barcodeScanner');
         const resultElement = document.getElementById('result');
         const putawayButton = document.getElementById('putawayButton');
@@ -207,14 +207,11 @@
         const caseCountInput = document.getElementById('caseCountInput');
         const flashOverlay = document.getElementById('flash-overlay');
 
-        // IMPORTANT: Replace this with YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
-        // This URL acts as the API endpoint for your Google Sheet.
         const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbygTMAatvB2aHVwFaWKVQnA1LvRO7XrWTmVjVkTFZBqR3UZRpQrp9gjbzWl8KkKzbkO/exec'; // Your actual /exec URL here
 
-        let codeReader;
-        let selectedAction = 'putaway'; // Default action is putaway
+        let codeReader; // Global reference for the scanner instance
+        let selectedAction = 'putaway'; // Default action
 
-        // Function to play a simple beep sound
         function playBeep() {
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -241,25 +238,21 @@
             }
         }
 
-        // Function to trigger the visual flash effect
         function triggerFlash() {
             flashOverlay.classList.add('active');
             setTimeout(() => {
                 flashOverlay.classList.remove('active');
-            }, 150); // Flash for 150 milliseconds
+            }, 150);
         }
 
-        // Function to fetch customers dynamically from Google Sheet
         async function fetchCustomers() {
             customerSelect.innerHTML = '<option value="">Loading customers...</option>';
             try {
-                // Use GET request to fetch customers
                 const response = await fetch(`${GOOGLE_SHEET_WEB_APP_URL}?action=getCustomers`);
-                // Parse response as JSON
                 const data = await response.json();
 
                 if (data.status === "success" && data.data) {
-                    customerSelect.innerHTML = '<option value="">-- Select Customer --</option>'; // Reset with default option
+                    customerSelect.innerHTML = '<option value="">-- Select Customer --</option>';
                     data.data.forEach(customer => {
                         const option = document.createElement('option');
                         option.value = customer;
@@ -279,28 +272,37 @@
 
         // Function to initialize and start the barcode scanner
         async function startScanner() {
+            if (codeReader) { // If scanner is already running, reset it first
+                codeReader.reset();
+                console.log('Previous scanner reset.');
+            }
             try {
                 resultElement.textContent = 'Initializing camera...';
                 codeReader = new ZXing.BrowserMultiFormatReader();
                 await codeReader.decodeFromVideoDevice(null, video, (result, err) => {
                     if (result) {
+                        // Barcode scanned successfully, process it and then STOP scanner
                         const scannedPallet = result.text;
                         const customerName = customerSelect.value;
-                        const caseCount = parseInt(caseCountInput.value, 10); // Get case count
+                        const caseCount = parseInt(caseCountInput.value, 10);
 
-                        // Input validation for customer and case count
                         if (customerName === "") {
                             resultElement.textContent = 'Please select a customer first!';
                             return;
                         }
-                        // Changed validation for case count to allow empty, but still require > 0 for action
                         if (isNaN(caseCount) || caseCount <= 0) {
                             resultElement.textContent = 'Please enter a valid case count (>0)!';
                             return;
                         }
 
-                        resultElement.textContent = `Scanned: ${scannedPallet} for ${customerName} (${caseCount} cases)`;
-                        sendToGoogleSheet(scannedPallet, customerName, caseCount, selectedAction); // Pass caseCount
+                        // Stop the scanner immediately after a successful scan
+                        if (codeReader) { // Ensure codeReader is not null
+                            codeReader.reset();
+                            console.log('Scanner stopped after successful scan.');
+                        }
+                        
+                        resultElement.textContent = `Scanned: ${scannedPallet} for ${customerName} (${caseCount} cases). Processing...`;
+                        sendToGoogleSheet(scannedPallet, customerName, caseCount, selectedAction);
                     }
                     if (err && !(err instanceof ZXing.NotFoundException)) {
                         console.error(err);
@@ -308,58 +310,64 @@
                     }
                 });
                 console.log('Scanner started.');
-                resultElement.textContent = 'Scanner ready. Select customer, enter cases, and scan.';
+                // Update initial ready message after scanner is truly ready
+                resultElement.textContent = `Scanner ready for ${selectedAction === 'putaway' ? 'PUT AWAY' : 'SHIPMENT'}. Select customer, enter cases, and scan.`;
             } catch (error) {
                 console.error('Error starting scanner:', error);
                 resultElement.textContent = `CRITICAL ERROR: Camera failed. ${error.name || ''}: ${error.message || error}. Please ensure browser has camera access.`;
             }
         }
 
-        // Function to send data to the Google Apps Script web app
         async function sendToGoogleSheet(palletNumber, customerName, caseCount, action) {
-            resultElement.textContent = `Processing ${action} for: ${palletNumber} (${customerName}, ${caseCount} cases)...`;
             try {
                 const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Still needed for POST requests to Apps Script
+                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    // Include all parameters in the body
                     body: `palletNumber=${encodeURIComponent(palletNumber)}&customer=${encodeURIComponent(customerName)}&caseCount=${encodeURIComponent(caseCount)}&action=${encodeURIComponent(action)}`,
                 });
 
-                // Since 'no-cors' is used, we can't read the direct response from Apps Script for POST requests.
-                // We'll optimistically update the UI.
                 resultElement.textContent = `${action === 'putaway' ? 'Put away' : 'Shipped'}: ${palletNumber} for ${customerName} (${caseCount} cases). Check Sheet.`;
+                playBeep();
+                triggerFlash();
 
-                playBeep();     // Trigger beep on successful transmission attempt
-                triggerFlash(); // Trigger flash on successful transmission attempt
+                // Clear inputs after successful submission
+                caseCountInput.value = ''; // Clear case count
+                customerSelect.selectedIndex = 0; // Reset customer dropdown to '-- Select Customer --'
+
+                // Update result message to prompt for next action
+                resultElement.textContent += '\n\nReady for next scan. Select customer, enter cases, and click a button to start scanner.';
 
             } catch (error) {
                 console.error('Error sending to Google Sheet:', error);
                 resultElement.textContent = `Failed to send data for ${palletNumber}. Error: ${error.message}`;
+                // If send failed, re-enable scanner so user can try again without clicking button
+                // This might lead to continuous scanning again if not handled carefully,
+                // but for error recovery, it's a reasonable first step.
+                // startScanner();
             }
         }
 
-        // Event listeners for action buttons
         putawayButton.addEventListener('click', () => {
             selectedAction = 'putaway';
+            startScanner(); // Start scanner when button is clicked
             resultElement.textContent = 'Ready to scan for PUT AWAY...';
         });
 
         shipButton.addEventListener('click', () => {
             selectedAction = 'ship';
+            startScanner(); // Start scanner when button is clicked
             resultElement.textContent = 'Ready to scan for SHIPMENT...';
         });
 
-        // Initialize: fetch customers, then start scanner when page loads
+        // Initialize: fetch customers on page load. Scanner only starts when a button is clicked.
         window.addEventListener('load', async () => {
-            await fetchCustomers(); // Fetch customers first
-            startScanner();         // Then start the scanner
+            await fetchCustomers();
+            resultElement.textContent = 'Select customer, enter cases, and click a button to start scanning.';
         });
 
-        // Clean up scanner resources on page unload
         window.addEventListener('beforeunload', () => {
             if (codeReader) {
                 codeReader.reset();
