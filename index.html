@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>22000 SC MC</title>
 
-    <link rel="manifest" href="manifest.json"> [cite: 2, 4]
-    <link rel="apple-touch-icon" href="novo_logo_(bug).png"> [cite: 2, 4]
-    <link rel="icon" href="novo_logo_(bug).png" type="image/png"> [cite: 2, 4]
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="novo_logo_(bug).png">
+    <link rel="icon" href="novo_logo_(bug).png" type="image/png">
 
     <style>
         /* Basic styling for the app */
@@ -313,7 +313,8 @@
                             console.log('Scanner stopped after successful scan.');
                         }
                         
-                        resultElement.textContent = `Scanned: ${scannedPallet} for <span class="math-inline">\{customerName\} \(</span>{caseCount} cases). Processing...`;
+                        // Corrected template literal syntax here
+                        resultElement.textContent = `Scanned: ${scannedPallet} for ${customerName} (${caseCount} cases). Processing...`;
                         sendToGoogleSheet(scannedPallet, customerName, caseCount, selectedAction);
                     }
                     if (err && !(err instanceof ZXing.NotFoundException)) {
@@ -338,10 +339,12 @@
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `palletNumber=<span class="math-inline">\{encodeURIComponent\(palletNumber\)\}&customer\=</span>{encodeURIComponent(customerName)}&caseCount=<span class="math-inline">\{encodeURIComponent\(caseCount\)\}&action\=</span>{encodeURIComponent(action)}`,
+                    // Corrected template literal syntax here
+                    body: `palletNumber=${encodeURIComponent(palletNumber)}&customer=${encodeURIComponent(customerName)}&caseCount=${encodeURIComponent(caseCount)}&action=${encodeURIComponent(action)}`,
                 });
 
-                resultElement.textContent = `${action === 'putaway' ? 'Put away' : 'Shipped'}: ${palletNumber} for <span class="math-inline">\{customerName\} \(</span>{caseCount} cases). Check Sheet.`;
+                // Corrected template literal syntax here
+                resultElement.textContent = `${action === 'putaway' ? 'Put away' : 'Shipped'}: ${palletNumber} for ${customerName} (${caseCount} cases). Check Sheet.`;
                 playBeep();
                 triggerFlash();
 
