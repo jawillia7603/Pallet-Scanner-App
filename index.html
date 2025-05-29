@@ -237,12 +237,11 @@
         function playBeep() { /* ... same as before ... */ }
         function triggerFlash() { /* ... same as before ... */ }
 
-        // --- Customer Handling ---
         async function fetchCustomers() {
             customerSelect.innerHTML = '<option value="">Loading customers...</option>';
             try {
                 const response = await fetch(`${GOOGLE_SHEET_WEB_APP_URL}?action=getCustomers`);
-                if (!response.ok) throw new Error(`Network response was not ok: ${response.status}`);
+                if (!response.ok) throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
                 const data = await response.json();
 
                 if (data.status === "success" && data.data) {
@@ -263,45 +262,45 @@
             }
         }
 
-        // --- SKU Handling ---
         async function fetchSKUsForCustomer(customerName) {
-            // Clear previous SKUs and hide field initially
             skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
             skuInputGroup.style.display = 'none';
-            updateScannerReadyMessage(); // Update prompt
+            updateScannerReadyMessage();
 
-            if (!customerName) { // No customer selected
-                return;
-            }
+            if (!customerName) return;
 
             resultElement.textContent = `Loading SKUs for ${customerName}...`;
             try {
+                // Using mode: 'cors' (default) to be able to read the response
                 const response = await fetch(`${GOOGLE_SHEET_WEB_APP_URL}?action=getSKUsForCustomer&customer=${encodeURIComponent(customerName)}`);
-                if (!response.ok) throw new Error(`Network response was not ok: ${response.status}`);
-                const data = await response.json();
-
-                if (data.status === "success" && data.data && data.data.length > 0) {
-                    data.data.forEach(sku => {
-                        const option = document.createElement('option');
-                        option.value = sku; option.textContent = sku;
-                        skuSelect.appendChild(option);
-                    });
-                    skuInputGroup.style.display = 'flex'; // Show SKU field
-                    resultElement.textContent = `SKUs loaded for ${customerName}.`;
-                } else if (data.status === "success" && (!data.data || data.data.length === 0)) {
-                    // No SKUs found for this customer, which is fine. Keep SKU field hidden.
-                    resultElement.textContent = `No SKUs configured for ${customerName}.`;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === "success" && data.data && data.data.length > 0) {
+                        data.data.forEach(sku => {
+                            const option = document.createElement('option');
+                            option.value = sku; option.textContent = sku;
+                            skuSelect.appendChild(option);
+                        });
+                        skuInputGroup.style.display = 'flex';
+                        resultElement.textContent = `SKUs loaded for ${customerName}.`;
+                    } else if (data.status === "success" && (!data.data || data.data.length === 0)) {
+                        resultElement.textContent = `No SKUs configured for ${customerName}.`;
+                    } else { // Should be data.status === "error" from script
+                        resultElement.textContent = `Error loading SKUs: ${data.message || 'Unknown error from script.'}`;
+                    }
                 } else {
-                    resultElement.textContent = `Error: ${data.message || 'Failed to load SKUs.'}`;
+                     // Handle HTTP errors from server (e.g., 404, 500, CORS issues not resolved by server)
+                    resultElement.textContent = `Error loading SKUs: Server responded with status ${response.status}. Check script deployment and permissions.`;
+                    console.error('Server error fetching SKUs:', response.status, response.statusText);
                 }
-            } catch (error) {
-                console.error('Error fetching SKUs:', error);
+            } catch (error) { // Catch network errors or JSON parsing errors
+                console.error('Network or parsing error fetching SKUs:', error);
                 resultElement.textContent = `Network error loading SKUs: ${error.message}`;
             }
-            updateScannerReadyMessage(); // Update prompt again after loading
+            updateScannerReadyMessage();
         }
 
-        // --- Event Listeners ---
         customerSelect.addEventListener('change', function() {
             fetchSKUsForCustomer(this.value);
         });
@@ -311,20 +310,17 @@
             if (customerSelect.value && skuInputGroup.style.display === 'flex') {
                 message += ", then select SKU";
             } else if (customerSelect.value) {
-                message += " "; // Customer selected, no SKUs needed or loaded yet
+                message += "";
             }
             message += (customerSelect.value ? ", " : "") + "enter cases, then click Put Away or Ship to start.";
             
-            if (codeReader && codeReader.stream) { // Check if scanner is actually active
+            if (codeReader && codeReader.streamReady) { 
                  message = `Scanner ready for ${selectedAction === 'putaway' ? 'PUT AWAY' : 'SHIPMENT'}. Scan barcode.`;
             }
             resultElement.textContent = message;
         }
 
         async function startScanner() {
-            // ... (keep the robust startScanner function from the previous version, including TRY_HARDER hint)
-            // Ensure this function is the same as the last one provided that includes TRY_HARDER
-            // and no POSSIBLE_FORMATS.
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 resultElement.textContent = 'getUserMedia() not supported. Cannot access camera.';
                 console.error('getUserMedia() not supported.');
@@ -353,7 +349,6 @@
 
                         if (customerName === "") { resultElement.textContent = 'Please select a customer first!'; return; }
                         
-                        // Check if SKU field is visible and a SKU is required but not selected
                         if (skuInputGroup.style.display === 'flex' && skuValue === "") {
                             resultElement.textContent = `Please select an SKU for ${customerName}!`; return;
                         }
@@ -366,7 +361,7 @@
                         }
                         
                         let processingMessage = `Scanned: ${scannedPallet} for ${customerName}`;
-                        if (skuInputGroup.style.display === 'flex' && skuValue) { // Only include SKU if field was visible and SKU selected
+                        if (skuInputGroup.style.display === 'flex' && skuValue) {
                             processingMessage += ` (SKU: ${skuValue})`;
                         }
                         processingMessage += ` (${caseCount} cases). Processing...`;
@@ -378,7 +373,6 @@
                         console.error('ZXing scanning error:', err); 
                     }
                 });
-                // Update message after successful scanner start
                 resultElement.textContent = `Scanner active for ${selectedAction === 'putaway' ? 'PUT AWAY' : 'SHIPMENT'}. Aim at barcode.`;
             } catch (error) {
                 console.error('Error starting scanner:', error);
@@ -391,37 +385,53 @@
         }
 
         async function sendToGoogleSheet(palletNumber, customerName, sku, caseCount, action) {
+            resultElement.textContent = 'Sending data...'; // Provide immediate feedback
             try {
                 const bodyPayload = {
                     palletNumber: palletNumber, customer: customerName,
                     caseCount: caseCount, action: action
                 };
-                // Only include SKU if the SKU input group was visible (meaning SKUs are relevant for this customer)
-                // AND an actual SKU was selected.
                 if (skuInputGroup.style.display === 'flex' && sku) {
                     bodyPayload.sku = sku;
                 }
 
-                await fetch(GOOGLE_SHEET_WEB_APP_URL, {
-                    method: 'POST', mode: 'no-cors', 
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', },
+                // Using default mode 'cors' now.
+                const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+                    method: 'POST', 
+                    // mode: 'cors', // This is the default, so explicitly stating it is optional
+                    headers: { 
+                        'Content-Type': 'application/x-www-form-urlencoded', 
+                    },
                     body: new URLSearchParams(bodyPayload).toString(),
                 });
 
-                let successMessage = `${action === 'putaway' ? 'Put away' : 'Shipped'}: ${palletNumber} for ${customerName}`;
-                if (skuInputGroup.style.display === 'flex' && sku) {
-                    successMessage += ` (SKU: ${sku})`;
+                if (response.ok) {
+                    const data = await response.json(); // Try to parse the JSON response from the script
+                    if (data.status === "success") {
+                        resultElement.textContent = data.message; // Display success message from script
+                        playBeep(); 
+                        triggerFlash();
+                        caseCountInput.value = ''; 
+                        // Optionally reset other fields or update UI further
+                    } else { // data.status === "error"
+                        resultElement.textContent = data.message; // Display specific error message from script
+                    }
+                } else {
+                    // Handle HTTP errors (e.g., 404, 500, or CORS issues if server doesn't allow the request)
+                    // For Google Apps Script, it often returns 200 OK with error info in JSON,
+                    // but this handles cases where the script itself might be misconfigured or inaccessible.
+                    resultElement.textContent = `Error: Server responded with status ${response.status}. Check script deployment.`;
+                    console.error('Server error sending to Google Sheet:', response.status, response.statusText);
                 }
-                successMessage += ` (${caseCount} cases). Check Sheet.`;
-                resultElement.textContent = successMessage;
                 
-                playBeep(); triggerFlash();
-                caseCountInput.value = ''; 
                 resultElement.textContent += '\n\nReady for next scan. Select inputs and click button to activate scanner.';
-                updateScannerReadyMessage(); // Reset prompt
-            } catch (error) {
-                console.error('Error sending to Google Sheet:', error);
-                resultElement.textContent = `Failed to send data for ${palletNumber}. Error: ${error.message}`;
+                updateScannerReadyMessage();
+
+            } catch (error) { // Catch network errors or errors in parsing response.json()
+                console.error('Error sending to Google Sheet or processing response:', error);
+                resultElement.textContent = `Failed to send data or process response for ${palletNumber}. Error: ${error.message}`;
+                resultElement.textContent += '\n\nReady for next scan. Select inputs and click button to activate scanner.';
+                updateScannerReadyMessage();
             }
         }
 
@@ -430,8 +440,7 @@
 
         window.addEventListener('load', async () => {
             await fetchCustomers(); 
-            resultElement.textContent = 'Select customer, then other inputs, and click Put Away or Ship to start scanner.';
-            // Initial call to set the message based on whether a customer might be pre-selected (unlikely without storage)
+            // Initial message set after customers load.
             updateScannerReadyMessage(); 
         });
 
@@ -441,11 +450,7 @@
                 catch (e) { console.warn('Error resetting scanner on page unload:', e); }
             }
         });
-
-        // Make sure playBeep and triggerFlash are defined (copied from previous if not fully here)
-        // For brevity, I'm assuming they are complete as in prior versions.
-        // Re-add full function if they were trimmed in thought process.
-        // playBeep function:
+        
         function playBeep() {
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -464,7 +469,6 @@
                 } else { console.warn("AudioContext not supported"); }
             } catch (e) { console.warn("Error playing beep:", e); }
         }
-        // triggerFlash function:
         function triggerFlash() {
             flashOverlay.classList.add('active');
             setTimeout(() => { flashOverlay.classList.remove('active'); }, 150);
