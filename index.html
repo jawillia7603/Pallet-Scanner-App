@@ -1,71 +1,126 @@
-// Near the top of your <script> block, ensure these are defined:
-// const GOOGLE_SHEET_WEB_APP_URL = 'YOUR_URL_HERE';
-// const customerSelect = document.getElementById('customerSelect');
-// const skuSelect = document.getElementById('skuSelect');
-// const skuInputGroup = document.getElementById('skuInputGroup');
-// const resultElement = document.getElementById('result');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Customer SKU Selector</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    label {
+      font-weight: bold;
+    }
+    #skuInputGroup {
+      display: none;
+      margin-top: 10px;
+    }
+    #result {
+      margin-top: 15px;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
 
-customerSelect.addEventListener('change', function() {
-    console.log('Customer selected:', this.value); // New log
-    fetchSKUsForCustomer(this.value);
-});
+  <h2>Select Customer and SKU</h2>
 
-async function fetchSKUsForCustomer(customerName) {
-    console.log('fetchSKUsForCustomer called with customer:', customerName); // New log
-    skuSelect.innerHTML = '<option value="">-- Select SKU --</option>'; 
-    skuInputGroup.style.display = 'none'; 
-    // updateScannerReadyMessage(); // Called at the end now
+  <label for="customerSelect">Customer:</label>
+  <select id="customerSelect">
+    <option value="">-- Select Customer --</option>
+    <option value="Customer A">Customer A</option>
+    <option value="Customer B">Customer B</option>
+    <option value="Customer C">Customer C</option>
+  </select>
 
-    if (!customerName) {
-        console.log('No customerName provided to fetchSKUsForCustomer, exiting.'); // New log
+  <div id="skuInputGroup">
+    <label for="skuSelect">SKU:</label>
+    <select id="skuSelect">
+      <option value="">-- Select SKU --</option>
+    </select>
+  </div>
+
+  <div id="result"></div>
+
+  <script>
+    const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbygTMAatvB2aHVwFaWKVQnA1LvRO7XrWTmVjVkTFZBqR3UZRpQrp9gjbzWl8KkKzbkO/exec';
+
+    const customerSelect = document.getElementById('customerSelect');
+    const skuSelect = document.getElementById('skuSelect');
+    const skuInputGroup = document.getElementById('skuInputGroup');
+    const resultElement = document.getElementById('result');
+
+    customerSelect.addEventListener('change', function () {
+      console.log('Customer selected:', this.value);
+      fetchSKUsForCustomer(this.value);
+    });
+
+    async function fetchSKUsForCustomer(customerName) {
+      console.log('fetchSKUsForCustomer called with customer:', customerName);
+      skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
+      skuInputGroup.style.display = 'none';
+
+      if (!customerName) {
+        console.log('No customerName provided, exiting.');
         updateScannerReadyMessage();
         return;
-    }
+      }
 
-    resultElement.textContent = `Loading SKUs for ${customerName}...`;
-    console.log(`Attempting to fetch SKUs for: ${customerName}`); // New log
-    try {
-        const fetchUrl = `<span class="math-inline">\{GOOGLE\_SHEET\_WEB\_APP\_URL\}?action\=getSKUsForCustomer&customer\=</span>{encodeURIComponent(customerName)}`;
-        console.log('Fetching from URL:', fetchUrl); // New log
+      resultElement.textContent = `Loading SKUs for ${customerName}...`;
+      console.log(`Fetching SKUs for: ${customerName}`);
+
+      try {
+        const fetchUrl = `${GOOGLE_SHEET_WEB_APP_URL}?action=getSKUsForCustomer&customer=${encodeURIComponent(customerName)}`;
+        console.log('Fetching from URL:', fetchUrl);
 
         const response = await fetch(fetchUrl);
-        console.log('Fetch response received. response.ok:', response.ok, 'response.status:', response.status); // New log
+        console.log('Response received. OK:', response.ok, 'Status:', response.status);
 
         if (response.ok) {
-            const data = await response.json();
-            console.log('Parsed JSON data from script:', data); // New log
+          const data = await response.json();
+          console.log('Parsed JSON:', data);
 
-            if (data.status === "success" && data.data && data.data.length > 0) {
-                console.log('SKUs found. Populating dropdown.'); // New log
-                data.data.forEach(sku => {
-                    const option = document.createElement('option');
-                    option.value = sku; option.textContent = sku;
-                    skuSelect.appendChild(option);
-                });
-                skuInputGroup.style.display = 'flex'; 
-                resultElement.textContent = `SKUs loaded for ${customerName}. Ready for action.`;
-            } else if (data.status === "success" && (!data.data || data.data.length === 0)) {
-                console.log('Success, but no SKUs returned for this customer.'); // New log
-                resultElement.textContent = `No SKUs configured for ${customerName}. Ready for action.`;
-            } else { 
-                console.warn('Received success status but data format unexpected or message indicates issue:', data.message); // New log
-                resultElement.textContent = `Info loading SKUs: ${data.message || 'No specific SKU data returned.'}`;
-            }
+          if (data.status === "success" && Array.isArray(data.data) && data.data.length > 0) {
+            console.log('SKUs found. Populating dropdown.');
+            data.data.forEach(sku => {
+              const option = document.createElement('option');
+              option.value = sku;
+              option.textContent = sku;
+              skuSelect.appendChild(option);
+            });
+            skuInputGroup.style.display = 'flex';
+            resultElement.textContent = `SKUs loaded for ${customerName}. Ready for action.`;
+          } else if (data.status === "success") {
+            console.log('No SKUs returned.');
+            resultElement.textContent = `No SKUs configured for ${customerName}. Ready for action.`;
+          } else {
+            console.warn('Unexpected data format:', data.message);
+            resultElement.textContent = `Info loading SKUs: ${data.message || 'Unknown issue'}`;
+          }
         } else {
-            let errorDetail = `Server responded with status ${response.status}.`;
-            try {
-                 const errText = await response.text(); 
-                 console.error('Server error response text (from !response.ok):', errText); // New log
-                 errorDetail += ` Response: ${errText.substring(0,100)}`; 
-            } catch(e) {
-                 console.error('Could not read error response text:', e); // New log
-            }
-            resultElement.textContent = `Error loading SKUs: ${errorDetail}. Check script deployment ('Anyone' access) and URL.`;
-            console.error('Server error fetching SKUs (full response object):', response); // New log
+          let errorDetail = `Server error: ${response.status}`;
+          try {
+            const errText = await response.text();
+            errorDetail += ` | Response: ${errText.substring(0, 100)}`;
+            console.error('Error text:', errText);
+          } catch (e) {
+            console.error('Error reading error text:', e);
+          }
+          resultElement.textContent = `Error loading SKUs: ${errorDetail}.`;
         }
-    } catch (error) { 
-        console.error('Catch block: Network or parsing error fetching SKUs:', error); // New log
-        resultElement.textContent = `Network error loading SKUs: ${error.message}. Check console and Apps Script URL.`;
+      } catch (error) {
+        console.error('Network/parsing error:', error);
+        resultElement.textContent = `Network error: ${error.message}.`;
+      }
+
+      updateScannerReadyMessage();
     }
-    updateScannerReadyMessage(); 
-}
+
+    function updateScannerReadyMessage() {
+      // Optional: update status or message on page
+      console.log('Scanner status updated.');
+    }
+  </script>
+
+</body>
+</html>
