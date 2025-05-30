@@ -219,7 +219,7 @@
 
     <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
     <script>
-        console.log("HTML Page: Main script block started."); // For basic script execution check
+        console.log("HTML Page: Main script block started."); 
 
         const video = document.getElementById('barcodeScanner');
         const resultElement = document.getElementById('result');
@@ -231,7 +231,8 @@
         const caseCountInput = document.getElementById('caseCountInput');
         const flashOverlay = document.getElementById('flash-overlay');
 
-        const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBTHjmHbZ0E4pNacZe-pf140DpudXWGHXl-7pBeGPfnnW27LDRSemuojqwilP5qY1h/exec'; 
+        // Using the new URL you provided:
+        const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx6TCjhriGLXc2S2x_HsOCv2zigEq34ZK_vzvZJjF776_vANN2DNtiISCwVbUfzJGdn/exec'; 
 
         let codeReader;
         let selectedAction = 'putaway';
@@ -266,14 +267,18 @@
             resultElement.textContent = 'Loading customers...'; 
             try {
                 const response = await fetch(`${GOOGLE_SHEET_WEB_APP_URL}?action=getCustomers`);
-                console.log("HTML Page: fetchCustomers response status:", response.status);
+                console.log("HTML Page: fetchCustomers response status:", response.status, "ok:", response.ok);
                 if (!response.ok) {
                     let errorText = `Network response was not ok: ${response.status} ${response.statusText}.`;
                     try {
                         const errorData = await response.json(); 
                         console.error("HTML Page: fetchCustomers error data from server:", errorData);
                         errorText += ` Server message: ${errorData.message || JSON.stringify(errorData)}`;
-                    } catch (e) { /* Ignore if response body can't be parsed */ }
+                    } catch (e) { 
+                        console.warn("HTML Page: Could not parse error response body for fetchCustomers:", e);
+                        // const errText = await response.text(); // Alternative for non-JSON errors
+                        // errorText += ` Server response: ${errText.substring(0,100)}`;
+                    }
                     throw new Error(errorText + " Ensure Apps Script is deployed with 'Anyone' access.");
                 }
                 const data = await response.json();
@@ -383,14 +388,14 @@
             if (codeReader && typeof codeReader.streamReady !== 'undefined' && codeReader.streamReady) { 
                  message = `Scanner ready for ${selectedAction === 'putaway' ? 'PUT AWAY' : 'SHIPMENT'}. Aim barcode at target.`;
             }
-            // Only update if resultElement is not currently showing a specific loading or error message from fetch operations
-            if (!resultElement.textContent.toLowerCase().includes("loading") && !resultElement.textContent.toLowerCase().includes("error") && !resultElement.textContent.toLowerCase().includes("info")) {
-                 resultElement.textContent = message;
-            } else if (resultElement.textContent.includes("Ready for action.")) { // Allow override if SKUs loaded
+            
+            const currentResultText = resultElement.textContent || "";
+            if (!currentResultText.toLowerCase().includes("loading") && 
+                !currentResultText.toLowerCase().includes("error") && 
+                !currentResultText.toLowerCase().includes("info") ||
+                currentResultText.includes("Ready for action.")) {
                  resultElement.textContent = message;
             }
-
-
             console.log("HTML Page: updateScannerReadyMessage new message:", message, "Current resultElement:", resultElement.textContent);
         }
 
@@ -412,7 +417,7 @@
             
             codeReader = new ZXing.BrowserMultiFormatReader(hints); 
             console.log('ZXing BrowserMultiFormatReader initialized with hints:', hints);
-            codeReader.streamReady = false; // Initialize custom flag
+            codeReader.streamReady = false; 
 
             try {
                 resultElement.textContent = 'Initializing camera...';
@@ -436,7 +441,7 @@
                         } else if (codeReader && typeof codeReader.reset === 'function') {
                            codeReader.reset(); console.log('Scanner reset after successful scan.');
                         }
-                        codeReader.streamReady = false; // Stream stopped
+                        codeReader.streamReady = false; 
                         
                         let processingMessage = `Scanned: ${scannedPallet} for ${customerName}`;
                         if (skuInputGroup.style.display === 'flex' && skuValue) {
@@ -542,8 +547,28 @@
             }
         });
         
-        // playBeep and triggerFlash functions should be here
-        // (They were complete in the version I am basing this on)
+        function playBeep() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    const audioCtx = new AudioContext();
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+                    oscillator.start(audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    oscillator.stop(audioCtx.currentTime + 0.3);
+                } else { console.warn("AudioContext not supported"); }
+            } catch (e) { console.warn("Error playing beep:", e); }
+        }
+        function triggerFlash() {
+            flashOverlay.classList.add('active');
+            setTimeout(() => { flashOverlay.classList.remove('active'); }, 150);
+        }
 
     </script>
 </body>
