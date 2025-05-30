@@ -229,8 +229,8 @@
         const caseCountInput = document.getElementById('caseCountInput');
         const flashOverlay = document.getElementById('flash-overlay');
 
-        // !!! IMPORTANT: Replace this with your actual deployed Google Apps Script Web App URL !!!
-        const GOOGLE_SHEET_WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE'; 
+        // Using the URL you provided:
+        const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbygTMAatvB2aHVwFaWKVQnA1LvRO7XrWTmVjVkTFZBqR3UZRpQrp9gjbzWl8KkKzbkO/exec'; 
 
         let codeReader;
         let selectedAction = 'putaway';
@@ -253,6 +253,7 @@
                 } else { console.warn("AudioContext not supported"); }
             } catch (e) { console.warn("Error playing beep:", e); }
         }
+
         function triggerFlash() {
             flashOverlay.classList.add('active');
             setTimeout(() => { flashOverlay.classList.remove('active'); }, 150);
@@ -260,35 +261,49 @@
 
         async function fetchCustomers() {
             customerSelect.innerHTML = '<option value="">Loading customers...</option>';
+            resultElement.textContent = 'Loading customers...'; 
             try {
                 const response = await fetch(`${GOOGLE_SHEET_WEB_APP_URL}?action=getCustomers`);
-                if (!response.ok) throw new Error(`Network response was not ok: ${response.status} ${response.statusText}. Ensure Apps Script is deployed with 'Anyone' access.`);
+                if (!response.ok) {
+                    let errorText = `Network response was not ok: ${response.status} ${response.statusText}.`;
+                    try {
+                        const errorData = await response.json(); 
+                        errorText += ` Server message: ${errorData.message || JSON.stringify(errorData)}`;
+                    } catch (e) { /* Ignore if response body can't be parsed */ }
+                    throw new Error(errorText + " Ensure Apps Script is deployed with 'Anyone' access.");
+                }
                 const data = await response.json();
 
                 if (data.status === "success" && data.data) {
                     customerSelect.innerHTML = '<option value="">-- Select Customer --</option>';
-                    data.data.forEach(customer => {
-                        const option = document.createElement('option');
-                        option.value = customer; option.textContent = customer;
-                        customerSelect.appendChild(option);
-                    });
-                } else {
+                    if (data.data.length > 0) {
+                        data.data.forEach(customer => {
+                            const option = document.createElement('option');
+                            option.value = customer; option.textContent = customer;
+                            customerSelect.appendChild(option);
+                        });
+                        resultElement.textContent = 'Please select a customer.';
+                    } else {
+                        resultElement.textContent = 'No customers found. Please add customers to the sheet.';
+                    }
+                } else { 
                     customerSelect.innerHTML = '<option value="">Error loading customers</option>';
-                    resultElement.textContent = `Error loading customers: ${data.message || 'Failed to load customers.'}`;
+                    resultElement.textContent = `Error loading customers: ${data.message || 'Failed to load customers from script.'}`;
                 }
             } catch (error) {
                 console.error('Error fetching customers:', error);
                 customerSelect.innerHTML = '<option value="">Network error</option>';
-                resultElement.textContent = `Network error loading customers: ${error.message}. Check Apps Script URL and deployment.`;
+                resultElement.textContent = `Network error loading customers: ${error.message}. Check Apps Script URL, deployment settings, and console.`;
             }
+             updateScannerReadyMessage(); 
         }
 
         async function fetchSKUsForCustomer(customerName) {
-            skuSelect.innerHTML = '<option value="">-- Select SKU --</option>'; // Reset SKU dropdown
-            skuInputGroup.style.display = 'none'; // Hide SKU field initially
-            updateScannerReadyMessage(); // Update prompt
+            skuSelect.innerHTML = '<option value="">-- Select SKU --</option>'; 
+            skuInputGroup.style.display = 'none'; 
+            updateScannerReadyMessage(); 
 
-            if (!customerName) { // No customer selected or deselected
+            if (!customerName) { 
                 return;
             }
 
@@ -304,23 +319,28 @@
                             option.value = sku; option.textContent = sku;
                             skuSelect.appendChild(option);
                         });
-                        skuInputGroup.style.display = 'flex'; // Show SKU field as SKUs are available
+                        skuInputGroup.style.display = 'flex'; 
                         resultElement.textContent = `SKUs loaded for ${customerName}. Ready for action.`;
                     } else if (data.status === "success" && (!data.data || data.data.length === 0)) {
-                        // No SKUs found for this customer, which is fine. Keep SKU field hidden.
                         resultElement.textContent = `No SKUs configured for ${customerName}. Ready for action.`;
-                    } else { // data.status === "error" from script, or other unexpected success structure
+                    } else { 
                         resultElement.textContent = `Info loading SKUs: ${data.message || 'No specific SKU data returned.'}`;
                     }
                 } else {
-                    resultElement.textContent = `Error loading SKUs: Server responded with status ${response.status}. Check script deployment (set to 'Anyone' access) and URL.`;
-                    console.error('Server error fetching SKUs:', response.status, response.statusText, await response.text());
+                    let errorDetail = `Server responded with status ${response.status}.`;
+                    try {
+                         const errText = await response.text(); 
+                         console.error('Server error fetching SKUs (response text):', errText);
+                         errorDetail += ` Response: ${errText.substring(0,100)}`; 
+                    } catch(e) {/*ignore if can't read text*/}
+                    resultElement.textContent = `Error loading SKUs: ${errorDetail}. Check script deployment ('Anyone' access) and URL.`;
+                    console.error('Server error fetching SKUs (full response object):', response);
                 }
-            } catch (error) { // Catch network errors or JSON parsing errors
+            } catch (error) { 
                 console.error('Network or parsing error fetching SKUs:', error);
                 resultElement.textContent = `Network error loading SKUs: ${error.message}. Check console and Apps Script URL.`;
             }
-            updateScannerReadyMessage(); // Update prompt again after loading
+            updateScannerReadyMessage(); 
         }
 
         customerSelect.addEventListener('change', function() {
@@ -329,17 +349,19 @@
 
         function updateScannerReadyMessage() {
             let message = `Select customer`;
-            if (customerSelect.value && skuInputGroup.style.display === 'flex') {
-                message += ", then select SKU";
-            } else if (customerSelect.value) {
-                message += ""; // Customer selected, no SKUs needed or loaded yet for current view
+            if (customerSelect.value && customerSelect.value !== "") { 
+                 if (skuInputGroup.style.display === 'flex') {
+                    message = `For ${customerSelect.value}, select SKU, enter cases, then click button.`;
+                 } else {
+                    message = `For ${customerSelect.value}, enter cases, then click button.`;
+                 }
+            } else { 
+                message = "Please select a customer.";
             }
-            message += (customerSelect.value ? ", " : "") + "enter cases, then click Put Away or Ship to start scanner.";
             
-            // This part might need adjustment if scanner is not always meant to be "ready"
-            // if (codeReader && codeReader.streamReady) { // Check if scanner is actually active and ready
-            //      message = `Scanner ready for ${selectedAction === 'putaway' ? 'PUT AWAY' : 'SHIPMENT'}. Scan barcode.`;
-            // }
+            if (codeReader && typeof codeReader.streamReady !== 'undefined' && codeReader.streamReady) { 
+                 message = `Scanner ready for ${selectedAction === 'putaway' ? 'PUT AWAY' : 'SHIPMENT'}. Aim barcode at target.`;
+            }
             resultElement.textContent = message;
         }
 
@@ -397,13 +419,18 @@
                     }
                 });
                 resultElement.textContent = `Scanner active for ${selectedAction === 'putaway' ? 'PUT AWAY' : 'SHIPMENT'}. Aim at barcode.`;
+                codeReader.streamReady = true; 
+                updateScannerReadyMessage();
+
             } catch (error) {
                 console.error('Error starting scanner:', error);
+                if(codeReader) codeReader.streamReady = false; 
                 let detailedErrorMessage = `Camera init failed: ${error.name || ''} - ${error.message || error}.`;
                 if (error.name === "NotAllowedError") { detailedErrorMessage += " Camera permissions denied."; }
                 else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") { detailedErrorMessage += " No camera found."; }
                 else if (error.name === "NotReadableError") { detailedErrorMessage += " Camera in use or hardware error."; }
                 resultElement.textContent = detailedErrorMessage;
+                updateScannerReadyMessage(); 
             }
         }
 
@@ -414,7 +441,7 @@
                     palletNumber: palletNumber, customer: customerName,
                     caseCount: caseCount, action: action
                 };
-                if (skuInputGroup.style.display === 'flex' && sku) { // Only send SKU if the field was visible and SKU has a value
+                if (skuInputGroup.style.display === 'flex' && sku && sku.trim() !== "") { 
                     bodyPayload.sku = sku;
                 }
 
@@ -426,27 +453,36 @@
                     body: new URLSearchParams(bodyPayload).toString(),
                 });
 
+                let serverMessage = "";
                 if (response.ok) {
                     const data = await response.json(); 
-                    resultElement.textContent = data.message; // Display message from script (success or error)
+                    serverMessage = data.message; 
                     if (data.status === "success") {
                         playBeep(); 
                         triggerFlash();
                         caseCountInput.value = ''; 
                     }
                 } else {
-                    resultElement.textContent = `Error: Server responded with status ${response.status}. Check script deployment.`;
-                    console.error('Server error sending to Google Sheet:', response.status, response.statusText, await response.text());
+                    let errorDetail = `Server responded with status ${response.status}.`;
+                     try {
+                         const errText = await response.text(); 
+                         console.error('Server error sending to Google Sheet (response text):', errText);
+                         errorDetail += ` Response: ${errText.substring(0,150)}`; 
+                    } catch(e) {/*ignore if can't read text*/}
+                    serverMessage = `Error sending data: ${errorDetail}. Check script deployment.`;
                 }
+                resultElement.textContent = serverMessage; // Display the server message (success or error)
                 
-                resultElement.textContent += '\n\nReady for next scan. Select inputs and click button to activate scanner.';
-                updateScannerReadyMessage();
+                setTimeout(() => {
+                    updateScannerReadyMessage(); 
+                }, 2500); // Give user time to read server message before resetting prompt
 
             } catch (error) { 
                 console.error('Error sending to Google Sheet or processing response:', error);
                 resultElement.textContent = `Failed to send data or process response for ${palletNumber}. Error: ${error.message}`;
-                resultElement.textContent += '\n\nReady for next scan. Select inputs and click button to activate scanner.';
-                updateScannerReadyMessage();
+                setTimeout(() => {
+                    updateScannerReadyMessage();
+                }, 2500);
             }
         }
 
@@ -456,7 +492,7 @@
         window.addEventListener('load', async () => {
             resultElement.textContent = 'Loading customer data...';
             await fetchCustomers(); 
-            updateScannerReadyMessage(); 
+            // updateScannerReadyMessage will be called by fetchCustomers on completion or error
         });
 
         window.addEventListener('beforeunload', () => {
