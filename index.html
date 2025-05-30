@@ -1,530 +1,71 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>22000 SC MC</title>
+// Near the top of your <script> block, ensure these are defined:
+// const GOOGLE_SHEET_WEB_APP_URL = 'YOUR_URL_HERE';
+// const customerSelect = document.getElementById('customerSelect');
+// const skuSelect = document.getElementById('skuSelect');
+// const skuInputGroup = document.getElementById('skuInputGroup');
+// const resultElement = document.getElementById('result');
 
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="novo_logo_(bug).png">
-    <link rel="icon" href="novo_logo_(bug).png" type="image/png">
+customerSelect.addEventListener('change', function() {
+    console.log('Customer selected:', this.value); // New log
+    fetchSKUsForCustomer(this.value);
+});
 
-    <style>
-        /* Basic styling for the app */
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start; /* Align to top for more space */
-            min-height: 100vh;
-            padding-top: 20px; /* Add some padding at the top */
-            margin: 0;
-            background-color: #f4f4f4;
-            color: #333;
-        }
+async function fetchSKUsForCustomer(customerName) {
+    console.log('fetchSKUsForCustomer called with customer:', customerName); // New log
+    skuSelect.innerHTML = '<option value="">-- Select SKU --</option>'; 
+    skuInputGroup.style.display = 'none'; 
+    // updateScannerReadyMessage(); // Called at the end now
 
-        /* Logo styling */
-        #app-logo {
-            max-width: 180px;
-            width: 50%;
-            height: auto;
-            margin-bottom: 20px;
-        }
+    if (!customerName) {
+        console.log('No customerName provided to fetchSKUsForCustomer, exiting.'); // New log
+        updateScannerReadyMessage();
+        return;
+    }
 
-        /* Styling for the main heading */
-        h1 {
-            color: #192B55; /* Novo Logistics Dark Blue */
-            margin-bottom: 20px;
-        }
+    resultElement.textContent = `Loading SKUs for ${customerName}...`;
+    console.log(`Attempting to fetch SKUs for: ${customerName}`); // New log
+    try {
+        const fetchUrl = `<span class="math-inline">\{GOOGLE\_SHEET\_WEB\_APP\_URL\}?action\=getSKUsForCustomer&customer\=</span>{encodeURIComponent(customerName)}`;
+        console.log('Fetching from URL:', fetchUrl); // New log
 
-        /* Group for form inputs */
-        .input-group {
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 90%;
-            max-width: 300px;
-        }
-        .input-group label {
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #192B55;
-        }
-        .input-group select, .input-group input[type="number"] {
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            font-size: 1em;
-            width: 100%;
-            box-sizing: border-box;
-            background-color: white;
-        }
-        /* Custom dropdown arrow */
-        .input-group select {
-            appearance: none;
-            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23192B55%22%20d%3D%22M287%2C197.971L146.2%2C57.171L5.4%2C197.971C-1.8%2C205.171%2C-1.8%2C216.771%2C5.4%2C223.971C12.6%2C231.171%2C24.2%2C231.171%2C31.4%2C223.971L146.2%2C109.171L261%2C223.971C268.2%2C231.171%2C279.8%2C231.171%2C287%2C223.971C294.2%2C216.771%2C294.2%2C205.171%2C287%2C197.971Z%22%2F%3E%3C%2Fsvg%3E');
-            background-repeat: no-repeat;
-            background-position: right 10px top 50%;
-            background-size: 12px;
-        }
+        const response = await fetch(fetchUrl);
+        console.log('Fetch response received. response.ok:', response.ok, 'response.status:', response.status); // New log
 
-        /* Video scanner area */
-        #video-container {
-            width: 90%;
-            max-width: 500px;
-            aspect-ratio: 4/3;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            background-color: black;
-            position: relative;
-            overflow: hidden;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        #scanner-overlay {
-            position: absolute;
-            top: 15%; left: 15%;
-            width: 70%; height: 70%;
-            border: 3px solid #2850A0;
-            box-sizing: border-box;
-            pointer-events: none;
-            border-radius: 5px;
-            animation: pulse-border 1.5s infinite alternate;
-        }
-        @keyframes pulse-border {
-            from { border-color: #2850A0; }
-            to { border-color: #F37121; }
-        }
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Parsed JSON data from script:', data); // New log
 
-        /* Action buttons */
-        #button-container {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        button {
-            padding: 12px 25px;
-            font-size: 1.1em;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.1s ease;
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            min-width: 150px;
-        }
-        button:active {
-            transform: translateY(1px);
-        }
-        #putawayButton {
-            background-color: #192B55;
-        }
-        #putawayButton:hover {
-            background-color: #2850A0;
-        }
-        #shipButton {
-            background-color: #F37121;
-        }
-        #shipButton:hover {
-            background-color: #e0681d;
-        }
-
-        /* Result display area */
-        #result {
-            margin-top: 15px;
-            font-size: 1.1em;
-            text-align: center;
-            color: #555;
-            padding: 10px 15px;
-            background-color: #e9e9e9;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-            min-height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-            white-space: pre-wrap;
-        }
-
-        /* Visual flash overlay */
-        #flash-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 255, 0, 0.4);
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.1s ease-out, visibility 0.1s ease-out;
-            z-index: 9999;
-            pointer-events: none;
-        }
-        #flash-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-    </style>
-</head>
-<body>
-    <div id="flash-overlay"></div>
-
-    <img id="app-logo" src="novo_logo_(vertical).png" alt="Novo Logistics">
-
-    <h1>22000 SC MC Pallet Scanner</h1>
-
-    <div class="input-group">
-        <label for="customerSelect">Select Customer:</label>
-        <select id="customerSelect">
-            <option value="">Loading customers...</option>
-        </select>
-    </div>
-
-    <div class="input-group" id="skuInputGroup" style="display: none;">
-        <label for="skuSelect">Select SKU:</label>
-        <select id="skuSelect">
-            <option value="">-- Select SKU --</option>
-            </select>
-    </div>
-
-    <div class="input-group">
-        <label for="caseCountInput">Case Count:</label>
-        <input type="number" id="caseCountInput" placeholder="Enter case count" min="1">
-    </div>
-
-    <div id="video-container">
-        <video id="barcodeScanner" playsinline></video>
-        <div id="scanner-overlay"></div>
-    </div>
-
-    <div id="button-container">
-        <button id="putawayButton">Put Away Pallet</button>
-        <button id="shipButton">Ship Pallet</button>
-    </div>
-
-    <p id="result">Please select a customer.</p>
-
-    <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
-    <script>
-        const video = document.getElementById('barcodeScanner');
-        const resultElement = document.getElementById('result');
-        const putawayButton = document.getElementById('putawayButton');
-        const shipButton = document.getElementById('shipButton');
-        const customerSelect = document.getElementById('customerSelect');
-        const skuInputGroup = document.getElementById('skuInputGroup');
-        const skuSelect = document.getElementById('skuSelect');
-        const caseCountInput = document.getElementById('caseCountInput');
-        const flashOverlay = document.getElementById('flash-overlay');
-
-        // Using the URL you provided:
-        const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbygTMAatvB2aHVwFaWKVQnA1LvRO7XrWTmVjVkTFZBqR3UZRpQrp9gjbzWl8KkKzbkO/exec'; 
-
-        let codeReader;
-        let selectedAction = 'putaway';
-
-        function playBeep() {
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) {
-                    const audioCtx = new AudioContext();
-                    const oscillator = audioCtx.createOscillator();
-                    const gainNode = audioCtx.createGain();
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-                    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
-                    oscillator.start(audioCtx.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-                    oscillator.stop(audioCtx.currentTime + 0.3);
-                } else { console.warn("AudioContext not supported"); }
-            } catch (e) { console.warn("Error playing beep:", e); }
-        }
-
-        function triggerFlash() {
-            flashOverlay.classList.add('active');
-            setTimeout(() => { flashOverlay.classList.remove('active'); }, 150);
-        }
-
-        async function fetchCustomers() {
-            customerSelect.innerHTML = '<option value="">Loading customers...</option>';
-            resultElement.textContent = 'Loading customers...'; 
-            try {
-                const response = await fetch(`${GOOGLE_SHEET_WEB_APP_URL}?action=getCustomers`);
-                if (!response.ok) {
-                    let errorText = `Network response was not ok: ${response.status} ${response.statusText}.`;
-                    try {
-                        const errorData = await response.json(); 
-                        errorText += ` Server message: ${errorData.message || JSON.stringify(errorData)}`;
-                    } catch (e) { /* Ignore if response body can't be parsed */ }
-                    throw new Error(errorText + " Ensure Apps Script is deployed with 'Anyone' access.");
-                }
-                const data = await response.json();
-
-                if (data.status === "success" && data.data) {
-                    customerSelect.innerHTML = '<option value="">-- Select Customer --</option>';
-                    if (data.data.length > 0) {
-                        data.data.forEach(customer => {
-                            const option = document.createElement('option');
-                            option.value = customer; option.textContent = customer;
-                            customerSelect.appendChild(option);
-                        });
-                        resultElement.textContent = 'Please select a customer.';
-                    } else {
-                        resultElement.textContent = 'No customers found. Please add customers to the sheet.';
-                    }
-                } else { 
-                    customerSelect.innerHTML = '<option value="">Error loading customers</option>';
-                    resultElement.textContent = `Error loading customers: ${data.message || 'Failed to load customers from script.'}`;
-                }
-            } catch (error) {
-                console.error('Error fetching customers:', error);
-                customerSelect.innerHTML = '<option value="">Network error</option>';
-                resultElement.textContent = `Network error loading customers: ${error.message}. Check Apps Script URL, deployment settings, and console.`;
-            }
-             updateScannerReadyMessage(); 
-        }
-
-        async function fetchSKUsForCustomer(customerName) {
-            skuSelect.innerHTML = '<option value="">-- Select SKU --</option>'; 
-            skuInputGroup.style.display = 'none'; 
-            updateScannerReadyMessage(); 
-
-            if (!customerName) { 
-                return;
-            }
-
-            resultElement.textContent = `Loading SKUs for ${customerName}...`;
-            try {
-                const response = await fetch(`${GOOGLE_SHEET_WEB_APP_URL}?action=getSKUsForCustomer&customer=${encodeURIComponent(customerName)}`);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.status === "success" && data.data && data.data.length > 0) {
-                        data.data.forEach(sku => {
-                            const option = document.createElement('option');
-                            option.value = sku; option.textContent = sku;
-                            skuSelect.appendChild(option);
-                        });
-                        skuInputGroup.style.display = 'flex'; 
-                        resultElement.textContent = `SKUs loaded for ${customerName}. Ready for action.`;
-                    } else if (data.status === "success" && (!data.data || data.data.length === 0)) {
-                        resultElement.textContent = `No SKUs configured for ${customerName}. Ready for action.`;
-                    } else { 
-                        resultElement.textContent = `Info loading SKUs: ${data.message || 'No specific SKU data returned.'}`;
-                    }
-                } else {
-                    let errorDetail = `Server responded with status ${response.status}.`;
-                    try {
-                         const errText = await response.text(); 
-                         console.error('Server error fetching SKUs (response text):', errText);
-                         errorDetail += ` Response: ${errText.substring(0,100)}`; 
-                    } catch(e) {/*ignore if can't read text*/}
-                    resultElement.textContent = `Error loading SKUs: ${errorDetail}. Check script deployment ('Anyone' access) and URL.`;
-                    console.error('Server error fetching SKUs (full response object):', response);
-                }
-            } catch (error) { 
-                console.error('Network or parsing error fetching SKUs:', error);
-                resultElement.textContent = `Network error loading SKUs: ${error.message}. Check console and Apps Script URL.`;
-            }
-            updateScannerReadyMessage(); 
-        }
-
-        customerSelect.addEventListener('change', function() {
-            fetchSKUsForCustomer(this.value);
-        });
-
-        function updateScannerReadyMessage() {
-            let message = `Select customer`;
-            if (customerSelect.value && customerSelect.value !== "") { 
-                 if (skuInputGroup.style.display === 'flex') {
-                    message = `For ${customerSelect.value}, select SKU, enter cases, then click button.`;
-                 } else {
-                    message = `For ${customerSelect.value}, enter cases, then click button.`;
-                 }
+            if (data.status === "success" && data.data && data.data.length > 0) {
+                console.log('SKUs found. Populating dropdown.'); // New log
+                data.data.forEach(sku => {
+                    const option = document.createElement('option');
+                    option.value = sku; option.textContent = sku;
+                    skuSelect.appendChild(option);
+                });
+                skuInputGroup.style.display = 'flex'; 
+                resultElement.textContent = `SKUs loaded for ${customerName}. Ready for action.`;
+            } else if (data.status === "success" && (!data.data || data.data.length === 0)) {
+                console.log('Success, but no SKUs returned for this customer.'); // New log
+                resultElement.textContent = `No SKUs configured for ${customerName}. Ready for action.`;
             } else { 
-                message = "Please select a customer.";
+                console.warn('Received success status but data format unexpected or message indicates issue:', data.message); // New log
+                resultElement.textContent = `Info loading SKUs: ${data.message || 'No specific SKU data returned.'}`;
             }
-            
-            if (codeReader && typeof codeReader.streamReady !== 'undefined' && codeReader.streamReady) { 
-                 message = `Scanner ready for ${selectedAction === 'putaway' ? 'PUT AWAY' : 'SHIPMENT'}. Aim barcode at target.`;
-            }
-            resultElement.textContent = message;
-        }
-
-        async function startScanner() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                resultElement.textContent = 'getUserMedia() not supported. Cannot access camera.';
-                console.error('getUserMedia() not supported.');
-                return;
-            }
-
-            const hints = new Map();
-            hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-
-            if (codeReader) { 
-                try { codeReader.reset(); console.log('Previous scanner instance reset.'); }
-                catch (resetError) { console.warn('Error resetting previous scanner instance:', resetError); }
-            }
-            
-            codeReader = new ZXing.BrowserMultiFormatReader(hints); 
-            console.log('ZXing BrowserMultiFormatReader initialized with hints:', hints);
-
+        } else {
+            let errorDetail = `Server responded with status ${response.status}.`;
             try {
-                resultElement.textContent = 'Initializing camera...';
-                await codeReader.decodeFromVideoDevice(undefined, video, (result, err, controls) => {
-                    if (result) {
-                        const scannedPallet = result.text;
-                        const customerName = customerSelect.value;
-                        const skuValue = skuSelect.value; 
-                        const caseCount = parseInt(caseCountInput.value, 10);
-
-                        if (customerName === "") { resultElement.textContent = 'Please select a customer first!'; return; }
-                        
-                        if (skuInputGroup.style.display === 'flex' && skuValue === "") {
-                            resultElement.textContent = `Please select an SKU for ${customerName}!`; return;
-                        }
-                        if (isNaN(caseCount) || caseCount <= 0) { resultElement.textContent = 'Please enter a valid case count (>0)!'; return; }
-
-                        if (controls && typeof controls.stop === 'function') {
-                            controls.stop(); console.log('Scanner stopped via controls.stop()');
-                        } else if (codeReader && typeof codeReader.reset === 'function') {
-                           codeReader.reset(); console.log('Scanner reset after successful scan.');
-                        }
-                        
-                        let processingMessage = `Scanned: ${scannedPallet} for ${customerName}`;
-                        if (skuInputGroup.style.display === 'flex' && skuValue) {
-                            processingMessage += ` (SKU: ${skuValue})`;
-                        }
-                        processingMessage += ` (${caseCount} cases). Processing...`;
-                        resultElement.textContent = processingMessage;
-                        
-                        sendToGoogleSheet(scannedPallet, customerName, skuValue, caseCount, selectedAction);
-                    }
-                    if (err && !(err instanceof ZXing.NotFoundException)) {
-                        console.error('ZXing scanning error:', err); 
-                    }
-                });
-                resultElement.textContent = `Scanner active for ${selectedAction === 'putaway' ? 'PUT AWAY' : 'SHIPMENT'}. Aim at barcode.`;
-                codeReader.streamReady = true; 
-                updateScannerReadyMessage();
-
-            } catch (error) {
-                console.error('Error starting scanner:', error);
-                if(codeReader) codeReader.streamReady = false; 
-                let detailedErrorMessage = `Camera init failed: ${error.name || ''} - ${error.message || error}.`;
-                if (error.name === "NotAllowedError") { detailedErrorMessage += " Camera permissions denied."; }
-                else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") { detailedErrorMessage += " No camera found."; }
-                else if (error.name === "NotReadableError") { detailedErrorMessage += " Camera in use or hardware error."; }
-                resultElement.textContent = detailedErrorMessage;
-                updateScannerReadyMessage(); 
+                 const errText = await response.text(); 
+                 console.error('Server error response text (from !response.ok):', errText); // New log
+                 errorDetail += ` Response: ${errText.substring(0,100)}`; 
+            } catch(e) {
+                 console.error('Could not read error response text:', e); // New log
             }
+            resultElement.textContent = `Error loading SKUs: ${errorDetail}. Check script deployment ('Anyone' access) and URL.`;
+            console.error('Server error fetching SKUs (full response object):', response); // New log
         }
-
-        async function sendToGoogleSheet(palletNumber, customerName, sku, caseCount, action) {
-            resultElement.textContent = 'Sending data...'; 
-            try {
-                const bodyPayload = {
-                    palletNumber: palletNumber, customer: customerName,
-                    caseCount: caseCount, action: action
-                };
-                if (skuInputGroup.style.display === 'flex' && sku && sku.trim() !== "") { 
-                    bodyPayload.sku = sku;
-                }
-
-                const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
-                    method: 'POST', 
-                    headers: { 
-                        'Content-Type': 'application/x-www-form-urlencoded', 
-                    },
-                    body: new URLSearchParams(bodyPayload).toString(),
-                });
-
-                let serverMessage = "";
-                if (response.ok) {
-                    const data = await response.json(); 
-                    serverMessage = data.message; 
-                    if (data.status === "success") {
-                        playBeep(); 
-                        triggerFlash();
-                        caseCountInput.value = ''; 
-                    }
-                } else {
-                    let errorDetail = `Server responded with status ${response.status}.`;
-                     try {
-                         const errText = await response.text(); 
-                         console.error('Server error sending to Google Sheet (response text):', errText);
-                         errorDetail += ` Response: ${errText.substring(0,150)}`; 
-                    } catch(e) {/*ignore if can't read text*/}
-                    serverMessage = `Error sending data: ${errorDetail}. Check script deployment.`;
-                }
-                resultElement.textContent = serverMessage; // Display the server message (success or error)
-                
-                setTimeout(() => {
-                    updateScannerReadyMessage(); 
-                }, 2500); // Give user time to read server message before resetting prompt
-
-            } catch (error) { 
-                console.error('Error sending to Google Sheet or processing response:', error);
-                resultElement.textContent = `Failed to send data or process response for ${palletNumber}. Error: ${error.message}`;
-                setTimeout(() => {
-                    updateScannerReadyMessage();
-                }, 2500);
-            }
-        }
-
-        putawayButton.addEventListener('click', () => { selectedAction = 'putaway'; startScanner(); });
-        shipButton.addEventListener('click', () => { selectedAction = 'ship'; startScanner(); });
-
-        window.addEventListener('load', async () => {
-            resultElement.textContent = 'Loading customer data...';
-            await fetchCustomers(); 
-            // updateScannerReadyMessage will be called by fetchCustomers on completion or error
-        });
-
-        window.addEventListener('beforeunload', () => {
-            if (codeReader && typeof codeReader.reset === 'function') {
-                try { codeReader.reset(); console.log('Scanner reset on page unload.'); }
-                catch (e) { console.warn('Error resetting scanner on page unload:', e); }
-            }
-        });
-        
-        function playBeep() {
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) {
-                    const audioCtx = new AudioContext();
-                    const oscillator = audioCtx.createOscillator();
-                    const gainNode = audioCtx.createGain();
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-                    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
-                    oscillator.start(audioCtx.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-                    oscillator.stop(audioCtx.currentTime + 0.3);
-                } else { console.warn("AudioContext not supported"); }
-            } catch (e) { console.warn("Error playing beep:", e); }
-        }
-        function triggerFlash() {
-            flashOverlay.classList.add('active');
-            setTimeout(() => { flashOverlay.classList.remove('active'); }, 150);
-        }
-
-    </script>
-</body>
-</html>
+    } catch (error) { 
+        console.error('Catch block: Network or parsing error fetching SKUs:', error); // New log
+        resultElement.textContent = `Network error loading SKUs: ${error.message}. Check console and Apps Script URL.`;
+    }
+    updateScannerReadyMessage(); 
+}
