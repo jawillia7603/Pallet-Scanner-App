@@ -184,7 +184,7 @@
     <!-- ZXing barcode scanning library -->
     <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
     <script>
-        // Proxy & backend
+        // Proxy for GETs only (leave for dropdowns)
         const CORS_PROXY = "https://api.allorigins.win/raw?url=";
         const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw1yxgn0qdFsBhEUk2Jj_tXWVMhyttJLlcSVRkU0lxEyMdlV-rdRkiPTqQDHesDnF_b/exec';
 
@@ -231,7 +231,7 @@
             }, 150);
         }
 
-        // Data fetching for dropdowns
+        // Data fetching for dropdowns (still uses proxy for GETs)
         async function fetchCustomers() {
             customerSelect.innerHTML = '<option value="">Loading customers...</option>';
             try {
@@ -362,16 +362,20 @@
             }
         }
 
+        // FIXED: Send POST DIRECTLY to Google Apps Script (not via CORS proxy)
         async function sendToGoogleSheet(palletNumber, customerName, sku, bin, caseCount, action) {
             try {
                 const body = `palletNumber=${encodeURIComponent(palletNumber)}&customer=${encodeURIComponent(customerName)}&sku=${encodeURIComponent(sku)}&bin=${encodeURIComponent(bin)}&caseCount=${encodeURIComponent(caseCount)}&action=${encodeURIComponent(action)}`;
-                const url = CORS_PROXY + encodeURIComponent(GOOGLE_SHEET_WEB_APP_URL);
-                await fetch(url, {
+                const url = GOOGLE_SHEET_WEB_APP_URL;
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: body,
                 });
+                const text = await response.text();
                 resultElement.textContent = `${action === 'putaway' ? 'Put away' : 'Shipped'}: ${palletNumber} for ${customerName} (${sku}, Bin: ${bin}, ${caseCount} cases). Check Sheet.`;
+                // Debugging/log:
+                console.log("POSTed to Google Apps Script, response:", text);
 
                 // Clear inputs for next scan
                 caseCountInput.value = '';
@@ -380,6 +384,7 @@
                 binSelect.selectedIndex = 0;
             } catch (error) {
                 resultElement.textContent = `Failed to send data for ${palletNumber}. Error: ${error.message}`;
+                console.error(error);
             }
         }
 
