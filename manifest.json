@@ -1,29 +1,24 @@
 {
-  "name": "Pallet Scanner App",
-  "short_name": "PalletScan",
-  "description": "A simple application for scanning and managing pallet inventory.",
+  "name": "22000 SC MC",
+  "short_name": "22000 SC MC",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#f4f4f4",
+  "background_color": "#ffffff",
   "theme_color": "#192B55",
   "icons": [
     {
-      "src": "novo_logo_(bug).png",
-      "sizes": "192x192",
+      "src": "novo_logo_(bug) app.png",
       "type": "image/png",
-      "purpose": "any maskable"
+      "sizes": "192x192"
     },
     {
-      "src": "novo_logo_(bug).png",
-      "sizes": "512x512",
+      "src": "novo_logo_(bug) app.png",
       "type": "image/png",
-      "purpose": "any maskable"
+      "sizes": "512x512"
     }
-    // You can add more sizes here if you have them, for example:
-    // {
-    //   "src": "path/to/your/icon-144x144.png",
-    //   "sizes": "144x144",
-    //   "type": "image/png",
+  ]
+}
+,
     //   "purpose": "any"
     // }
   ]
