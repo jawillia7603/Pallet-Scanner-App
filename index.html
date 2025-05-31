@@ -4,9 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>22000 SC MC</title>
+
+    <!-- PWA manifest and icons -->
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="novo_logo_(bug).png"> 
-    <link rel="icon" href="novo_logo_(bug).png" type="image/png"> 
+    <link rel="apple-touch-icon" sizes="192x192" href="novo_logo_(bug) app.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="novo_logo_(bug) app.png">
+    <link rel="icon" href="novo_logo_(bug) app.png" type="image/png">
+
+    <!-- Theme and status bar for iOS/Android -->
+    <meta name="theme-color" content="#192B55">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- Your CSS goes here (mobile-friendly example) -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -144,7 +154,6 @@
             opacity: 1;
             visibility: visible;
         }
-        /* Make sure no horizontal scroll on mobile */
         html, body { overflow-x: hidden; }
         @media (min-width: 700px) {
             #app-logo { max-width: 120px; }
@@ -156,7 +165,7 @@
 </head>
 <body>
     <div id="flash-overlay"></div>
-    <img id="app-logo" src="novo_logo_(vertical).png" alt="Novo Logistics">
+    <img id="app-logo" src="novo_logo_(bug) app.png" alt="Novo Logistics">
     <h1>22000 SC MC Pallet Scanner</h1>
     <div class="input-group">
         <label for="customerSelect">Select Customer:</label>
