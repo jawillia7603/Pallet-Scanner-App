@@ -8,7 +8,15 @@
     <link rel="apple-touch-icon" href="novo_logo_(bug).png"> 
     <link rel="icon" href="novo_logo_(bug).png" type="image/png"> 
     <style>
-        /* ... (use your existing CSS, unchanged) ... */
+        /* --- your existing CSS goes here --- */
+
+        /* Make PNG logo smaller */
+        #app-logo {
+            max-width: 120px;
+            width: 35%;
+            height: auto;
+            margin-bottom: 18px;
+        }
     </style>
 </head>
 <body>
@@ -25,12 +33,6 @@
         <label for="skuSelect">Select SKU:</label>
         <select id="skuSelect">
             <option value="">-- Select SKU --</option>
-            <option>Sweet Caramel Old Fashion</option>
-            <option>Chocolate Cherry</option>
-            <option>Tropical Pinacolda</option>
-            <option>Strawberry Daquri</option>
-            <option>Chocolate Espresso Martini</option>
-            <option>New York Cheesecake</option>
         </select>
     </div>
     <div class="input-group">
@@ -48,7 +50,7 @@
     <p id="result">Scan a barcode...</p>
     <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
     <script>
-        // --- CORS Proxy + Apps Script URL ---
+        // --- Proxy & Backend URL ---
         const CORS_PROXY = "https://corsproxy.io/?";
         const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBTHjmHbZ0E4pNacZe-pf140DpudXWGHXl-7pBeGPfnnW27LDRSemuojqwilP5qY1h/exec';
 
@@ -112,6 +114,34 @@
             } catch (error) {
                 customerSelect.innerHTML = '<option value="">Network error</option>';
                 resultElement.textContent = `Network error loading customers: ${error.message}`;
+            }
+        }
+
+        async function fetchSKUsForCustomer(customerName) {
+            skuSelect.innerHTML = '<option value="">Loading SKUs...</option>';
+            if (!customerName) {
+                skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
+                return;
+            }
+            try {
+                const url = CORS_PROXY + encodeURIComponent(
+                    `${GOOGLE_SHEET_WEB_APP_URL}?action=getSKUsForCustomer&customer=${encodeURIComponent(customerName)}`
+                );
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.status === "success" && data.data && data.data.length > 0) {
+                    skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
+                    data.data.forEach(sku => {
+                        const option = document.createElement('option');
+                        option.value = sku;
+                        option.textContent = sku;
+                        skuSelect.appendChild(option);
+                    });
+                } else {
+                    skuSelect.innerHTML = '<option value="">No SKUs for this customer</option>';
+                }
+            } catch (error) {
+                skuSelect.innerHTML = '<option value="">Error loading SKUs</option>';
             }
         }
 
@@ -179,6 +209,12 @@
             }
         }
 
+        // --- Event listeners ---
+        customerSelect.addEventListener('change', function() {
+            fetchSKUsForCustomer(customerSelect.value);
+            skuSelect.innerHTML = '<option value="">-- Select SKU --</option>'; // Reset SKU if customer changes
+        });
+
         putawayButton.addEventListener('click', () => {
             selectedAction = 'putaway';
             startScanner();
@@ -193,7 +229,7 @@
 
         window.addEventListener('load', async () => {
             await fetchCustomers();
-            skuSelect.selectedIndex = 0;
+            skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
             startScanner();
         });
 
