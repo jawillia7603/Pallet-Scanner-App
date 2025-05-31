@@ -1,80 +1,162 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ... head content unchanged ... -->
     <title>22000 SC MC</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="novo_logo_(bug).png">
     <link rel="icon" href="novo_logo_(bug).png" type="image/png">
     <style>
-        /* Your existing CSS goes here */
+      /* ... your CSS as in your file ... */
     </style>
 </head>
 <body>
     <div id="flash-overlay"></div>
     <img id="app-logo" src="novo_logo_(vertical).png" alt="Novo Logistics">
     <h1>22000 SC MC Pallet Scanner</h1>
-
-    <!-- UI code for customer, SKU, scanner, etc. goes here (unchanged) -->
-    <!-- ... your form and scanner controls ... -->
-
+    <div class="input-group">
+        <label for="customerSelect">Select Customer:</label>
+        <select id="customerSelect">
+            <option value="">Loading customers...</option>
+        </select>
+    </div>
+    <div class="input-group" id="skuInputGroup" style="display: none;">
+        <label for="skuSelect">Select SKU:</label>
+        <select id="skuSelect">
+            <option value="">-- Select SKU --</option>
+        </select>
+    </div>
+    <div class="input-group">
+        <label for="caseCountInput">Case Count:</label>
+        <input type="number" id="caseCountInput" placeholder="Enter case count" min="1">
+    </div>
+    <div id="video-container">
+        <video id="barcodeScanner" playsinline></video>
+        <div id="scanner-overlay"></div>
+    </div>
+    <div id="button-container">
+        <button id="putawayButton">Put Away Pallet</button>
+        <button id="shipButton">Ship Pallet</button>
+    </div>
+    <p id="result">Please select a customer.</p>
     <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
     <script>
-        // --- CORS Proxy and Script URLs ---
+        // ---- PATCHED FOR CORS PROXY ----
         const CORS_PROXY = "https://corsproxy.io/?";
         const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBTHjmHbZ0E4pNacZe-pf140DpudXWGHXl-7pBeGPfnnW27LDRSemuojqwilP5qY1h/exec';
 
-        // --- Scanner and Form logic below ---
-        // (Replace only fetches, leave all other logic as you have it)
+        // ... (keep your other variable declarations and function logic) ...
 
-        // Example: Fetch customers (GET)
         async function fetchCustomers() {
+            customerSelect.innerHTML = '<option value="">Loading customers...</option>';
+            resultElement.textContent = 'Loading customers...'; 
             try {
-                const url = CORS_PROXY + encodeURIComponent(GOOGLE_SHEET_WEB_APP_URL + '?action=getCustomers');
-                const response = await fetch(url);
+                const response = await fetch(CORS_PROXY + encodeURIComponent(`${GOOGLE_SHEET_WEB_APP_URL}?action=getCustomers`));
+                if (!response.ok) throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
                 const data = await response.json();
-                // populate dropdown, etc.
+                if (data.status === "success" && data.data) {
+                    customerSelect.innerHTML = '<option value="">-- Select Customer --</option>';
+                    if (data.data.length > 0) {
+                        data.data.forEach(customer => {
+                            const option = document.createElement('option');
+                            option.value = customer; option.textContent = customer;
+                            customerSelect.appendChild(option);
+                        });
+                        resultElement.textContent = 'Please select a customer.';
+                    } else {
+                        resultElement.textContent = 'No customers found. Please add customers to the sheet.';
+                    }
+                } else {
+                    customerSelect.innerHTML = '<option value="">Error loading customers</option>';
+                    resultElement.textContent = `Error loading customers: ${data.message || 'Failed to load customers from script.'}`;
+                }
             } catch (error) {
-                // handle error
+                customerSelect.innerHTML = '<option value="">Network error</option>';
+                resultElement.textContent = `Network error loading customers: ${error.message}.`;
             }
+            updateScannerReadyMessage();
         }
 
-        // Example: Fetch SKUs for customer
-        async function fetchSKUsForCustomer(customer) {
+        async function fetchSKUsForCustomer(customerName) {
+            skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
+            skuInputGroup.style.display = 'none';
+            if (!customerName) { updateScannerReadyMessage(); return; }
+            resultElement.textContent = `Loading SKUs for ${customerName}...`;
             try {
-                const url = CORS_PROXY + encodeURIComponent(GOOGLE_SHEET_WEB_APP_URL + '?action=getSKUs&customer=' + encodeURIComponent(customer));
-                const response = await fetch(url);
-                const data = await response.json();
-                // populate SKUs dropdown, etc.
+                const fetchUrl = CORS_PROXY + encodeURIComponent(`${GOOGLE_SHEET_WEB_APP_URL}?action=getSKUsForCustomer&customer=${encodeURIComponent(customerName)}`);
+                const response = await fetch(fetchUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === "success" && data.data && data.data.length > 0) {
+                        data.data.forEach(sku => {
+                            const option = document.createElement('option');
+                            option.value = sku; option.textContent = sku;
+                            skuSelect.appendChild(option);
+                        });
+                        skuInputGroup.style.display = 'flex';
+                        resultElement.textContent = `SKUs loaded for ${customerName}. Ready for action.`;
+                    } else if (data.status === "success") {
+                        resultElement.textContent = `No SKUs configured for ${customerName}. Ready for action.`;
+                    } else {
+                        resultElement.textContent = `Info loading SKUs: ${data.message || 'No specific SKU data returned.'}`;
+                    }
+                } else {
+                    resultElement.textContent = `Error loading SKUs: Server responded with status ${response.status}.`;
+                }
             } catch (error) {
-                // handle error
+                resultElement.textContent = `Network error loading SKUs: ${error.message}.`;
             }
+            updateScannerReadyMessage();
         }
 
-        // Example: Submit form (POST)
-        async function sendToGoogleSheet(payload) {
+        async function sendToGoogleSheet(palletNumber, customerName, sku, caseCount, action) {
+            resultElement.textContent = 'Sending data...'; 
             try {
-                const body = new URLSearchParams(payload).toString();
-                const url = CORS_PROXY + encodeURIComponent(GOOGLE_SHEET_WEB_APP_URL);
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: body
+                const bodyPayload = {
+                    palletNumber: palletNumber, customer: customerName,
+                    caseCount: caseCount, action: action
+                };
+                if (skuInputGroup.style.display === 'flex' && sku && sku.trim() !== "") { 
+                    bodyPayload.sku = sku;
+                }
+                const response = await fetch(CORS_PROXY + encodeURIComponent(GOOGLE_SHEET_WEB_APP_URL), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams(bodyPayload).toString(),
                 });
-                // If Apps Script returns JSON, you can use:
-                // const result = await response.json();
-                // handle success
+                let serverMessage = "";
+                if (response.ok) {
+                    const data = await response.json(); 
+                    serverMessage = data.message; 
+                    if (data.status === "success") {
+                        playBeep(); 
+                        triggerFlash();
+                        caseCountInput.value = ''; 
+                    }
+                } else {
+                    serverMessage = `Error sending data: Server responded with status ${response.status}.`;
+                }
+                resultElement.textContent = serverMessage; 
+                setTimeout(updateScannerReadyMessage, 2500);
             } catch (error) {
-                // handle error
+                resultElement.textContent = `Failed to send data: ${error.message}`;
+                setTimeout(updateScannerReadyMessage, 2500);
             }
         }
 
-        // (Keep all your scanner, UI event handling, and utility logic below)
-        // Example: Run fetchCustomers on page load
-        window.addEventListener('DOMContentLoaded', fetchCustomers);
+        // ... (rest of your unchanged logic: scanner, events, etc.) ...
 
-        // Add your remaining logic here, making sure all fetches use the CORS proxy as above.
+        customerSelect.addEventListener('change', function() { fetchSKUsForCustomer(this.value); });
+        putawayButton.addEventListener('click', () => { selectedAction = 'putaway'; startScanner(); });
+        shipButton.addEventListener('click', () => { selectedAction = 'ship'; startScanner(); });
+        window.addEventListener('load', async () => { await fetchCustomers(); });
+        window.addEventListener('beforeunload', () => {
+            if (codeReader && typeof codeReader.reset === 'function') {
+                try { codeReader.reset(); } catch (e) { }
+            }
+        });
+
+        // Keep all other UI and scanner logic as you have it...
     </script>
 </body>
 </html>
