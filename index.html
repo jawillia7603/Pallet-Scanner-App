@@ -5,18 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>22000 SC MC</title>
 
-    <!-- PWA manifest and icons -->
+    <!-- App Manifest and Icons (BUG only) -->
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" sizes="192x192" href="novo_logo_(bug) app.png">
     <link rel="apple-touch-icon" sizes="512x512" href="novo_logo_(bug) app.png">
     <link rel="icon" href="novo_logo_(bug) app.png" type="image/png">
-
-    <!-- Theme and status bar for iOS/Android -->
     <meta name="theme-color" content="#192B55">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-capable" content="yes">
 
-    <!-- Your CSS goes here (mobile-friendly example) -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -29,35 +26,35 @@
             color: #333;
         }
         #app-logo {
-            max-width: 90px;
-            width: 30vw;
+            max-width: 120px;
+            width: 60vw;
             height: auto;
-            margin: 18px 0 10px 0;
+            margin: 22px auto 10px auto;
             display: block;
         }
         h1 {
             color: #192B55;
-            margin-bottom: 16px;
-            font-size: 1.25em;
+            margin-bottom: 20px;
+            font-size: 1.3em;
             text-align: center;
             margin-top: 0;
         }
+        /* Example input group styling */
         .input-group {
             margin-bottom: 14px;
             width: 92vw;
-            max-width: 360px;
+            max-width: 340px;
             display: flex;
             flex-direction: column;
         }
         .input-group label {
             margin-bottom: 3px;
             font-weight: bold;
-            font-size: 1.1em;
             color: #192B55;
         }
         .input-group select,
         .input-group input[type="number"] {
-            padding: 13px 12px;
+            padding: 11px 12px;
             font-size: 1.08em;
             border: 1px solid #ced4da;
             border-radius: 6px;
@@ -65,66 +62,6 @@
             width: 100%;
             box-sizing: border-box;
         }
-        #video-container {
-            width: 96vw;
-            max-width: 340px;
-            aspect-ratio: 4/3;
-            margin: 18px 0;
-            border: 1.5px solid #ddd;
-            background: #000;
-            position: relative;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        #scanner-overlay {
-            position: absolute;
-            top: 12%;
-            left: 12%;
-            width: 76%;
-            height: 76%;
-            border: 2.5px solid #2850A0;
-            border-radius: 5px;
-            box-sizing: border-box;
-            pointer-events: none;
-            animation: pulse-border 1.3s infinite alternate;
-        }
-        @keyframes pulse-border {
-            from { border-color: #2850A0; }
-            to { border-color: #F37121; }
-        }
-        #button-container {
-            display: flex;
-            gap: 13px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        button {
-            padding: 15px 0;
-            font-size: 1.13em;
-            width: 145px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.2s;
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 1.5px 4px rgba(0,0,0,0.15);
-            margin-bottom: 4px;
-        }
-        button:active {
-            transform: scale(0.98);
-        }
-        #putawayButton { background: #192B55; }
-        #putawayButton:hover { background: #2850A0; }
-        #shipButton { background: #F37121; }
-        #shipButton:hover { background: #e0681d; }
         #result {
             margin-top: 13px;
             font-size: 1.08em;
@@ -141,32 +78,14 @@
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.07);
             padding: 10px 7px;
         }
-        #flash-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0,255,0,0.35);
-            opacity: 0; visibility: hidden;
-            transition: opacity 0.12s, visibility 0.12s;
-            z-index: 9999;
-            pointer-events: none;
-        }
-        #flash-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        html, body { overflow-x: hidden; }
-        @media (min-width: 700px) {
-            #app-logo { max-width: 120px; }
-            #video-container { max-width: 430px; }
-            #result { max-width: 430px; }
-            .input-group { max-width: 430px; }
-        }
     </style>
 </head>
 <body>
-    <div id="flash-overlay"></div>
-    <img id="app-logo" src="novo_logo_(bug) app.png" alt="Novo Logistics">
+    <!-- Vertical logo at the top of the app -->
+    <img id="app-logo" src="novo_logo_(vertical).png" alt="Novo Logistics">
     <h1>22000 SC MC Pallet Scanner</h1>
+
+    <!-- Example input groups for your actual app -->
     <div class="input-group">
         <label for="customerSelect">Select Customer:</label>
         <select id="customerSelect">
@@ -183,204 +102,12 @@
         <label for="caseCountInput">Case Count:</label>
         <input type="number" id="caseCountInput" placeholder="Enter case count" min="1">
     </div>
-    <div id="video-container">
-        <video id="barcodeScanner" playsinline></video>
-        <div id="scanner-overlay"></div>
-    </div>
-    <div id="button-container">
-        <button id="putawayButton">Put Away Pallet</button>
-        <button id="shipButton">Ship Pallet</button>
-    </div>
-    <p id="result">Scan a barcode...</p>
+
+    <!-- Example result message -->
+    <div id="result">Scan a barcode...</div>
+
+    <!-- Your app’s scripts here -->
     <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
-    <script>
-        // Proxy and backend URL
-        const CORS_PROXY = "https://api.allorigins.win/raw?url=";
-        const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBTHjmHbZ0E4pNacZe-pf140DpudXWGHXl-7pBeGPfnnW27LDRSemuojqwilP5qY1h/exec';
-
-        const video = document.getElementById('barcodeScanner');
-        const resultElement = document.getElementById('result');
-        const putawayButton = document.getElementById('putawayButton');
-        const shipButton = document.getElementById('shipButton');
-        const customerSelect = document.getElementById('customerSelect');
-        const skuSelect = document.getElementById('skuSelect');
-        const caseCountInput = document.getElementById('caseCountInput');
-        const flashOverlay = document.getElementById('flash-overlay');
-
-        let codeReader;
-        let selectedAction = 'putaway';
-
-        function playBeep() {
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) {
-                    const audioCtx = new AudioContext();
-                    const oscillator = audioCtx.createOscillator();
-                    const gainNode = audioCtx.createGain();
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-                    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
-                    oscillator.start(audioCtx.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-                    oscillator.stop(audioCtx.currentTime + 0.3);
-                }
-            } catch (e) { }
-        }
-
-        function triggerFlash() {
-            flashOverlay.classList.add('active');
-            setTimeout(() => {
-                flashOverlay.classList.remove('active');
-            }, 150);
-        }
-
-        async function fetchCustomers() {
-            customerSelect.innerHTML = '<option value="">Loading customers...</option>';
-            try {
-                const url = CORS_PROXY + encodeURIComponent(`${GOOGLE_SHEET_WEB_APP_URL}?action=getCustomers`);
-                const response = await fetch(url);
-                const data = await response.json();
-                if (data.status === "success" && data.data) {
-                    customerSelect.innerHTML = '<option value="">-- Select Customer --</option>';
-                    data.data.forEach(customer => {
-                        const option = document.createElement('option');
-                        option.value = customer;
-                        option.textContent = customer;
-                        customerSelect.appendChild(option);
-                    });
-                } else {
-                    customerSelect.innerHTML = '<option value="">Error loading customers</option>';
-                    resultElement.textContent = `Error: ${data.message || 'Failed to load customers.'}`;
-                }
-            } catch (error) {
-                customerSelect.innerHTML = '<option value="">Network error</option>';
-                resultElement.textContent = `Network error loading customers: ${error.message}`;
-            }
-        }
-
-        async function fetchSKUsForCustomer(customerName) {
-            skuSelect.innerHTML = '<option value="">Loading SKUs...</option>';
-            if (!customerName) {
-                skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
-                return;
-            }
-            try {
-                const url = CORS_PROXY + encodeURIComponent(
-                    `${GOOGLE_SHEET_WEB_APP_URL}?action=getSKUsForCustomer&customer=${encodeURIComponent(customerName)}`
-                );
-                const response = await fetch(url);
-                const data = await response.json();
-                if (data.status === "success" && data.data && data.data.length > 0) {
-                    skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
-                    data.data.forEach(sku => {
-                        const option = document.createElement('option');
-                        option.value = sku;
-                        option.textContent = sku;
-                        skuSelect.appendChild(option);
-                    });
-                } else {
-                    skuSelect.innerHTML = '<option value="">No SKUs for this customer</option>';
-                }
-            } catch (error) {
-                skuSelect.innerHTML = '<option value="">Error loading SKUs</option>';
-            }
-        }
-
-        async function sendToGoogleSheet(palletNumber, customerName, sku, caseCount, action) {
-            try {
-                const body = `palletNumber=${encodeURIComponent(palletNumber)}&customer=${encodeURIComponent(customerName)}&sku=${encodeURIComponent(sku)}&caseCount=${encodeURIComponent(caseCount)}&action=${encodeURIComponent(action)}`;
-                const url = CORS_PROXY + encodeURIComponent(GOOGLE_SHEET_WEB_APP_URL);
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: body,
-                });
-                resultElement.textContent = `${action === 'putaway' ? 'Put away' : 'Shipped'}: ${palletNumber} for ${customerName} (${sku}, ${caseCount} cases). Check Sheet.`;
-                playBeep();
-                triggerFlash();
-                caseCountInput.value = '';
-                skuSelect.selectedIndex = 0;
-                customerSelect.selectedIndex = 0;
-                resultElement.textContent += '\n\nReady for next scan. Select customer, SKU, enter cases, and click a button to start scanner.';
-            } catch (error) {
-                resultElement.textContent = `Failed to send data for ${palletNumber}. Error: ${error.message}`;
-            }
-        }
-
-        async function startScanner() {
-            if (codeReader) {
-                codeReader.reset();
-            }
-            try {
-                resultElement.textContent = 'Initializing camera...';
-                codeReader = new ZXing.BrowserMultiFormatReader();
-                await codeReader.decodeFromVideoDevice(null, video, (result, err) => {
-                    if (result) {
-                        const scannedPallet = result.text;
-                        const customerName = customerSelect.value;
-                        const sku = skuSelect.value;
-                        const caseCount = parseInt(caseCountInput.value, 10);
-
-                        if (!customerName) {
-                            resultElement.textContent = 'Please select a customer first!';
-                            return;
-                        }
-                        if (!sku) {
-                            resultElement.textContent = 'Please select a SKU!';
-                            return;
-                        }
-                        if (isNaN(caseCount) || caseCount <= 0) {
-                            resultElement.textContent = 'Please enter a valid case count (>0)!';
-                            return;
-                        }
-
-                        codeReader.reset();
-                        resultElement.textContent = `Scanned: ${scannedPallet} for ${customerName} (${sku}, ${caseCount} cases). Processing...`;
-                        sendToGoogleSheet(scannedPallet, customerName, sku, caseCount, selectedAction);
-                    }
-                    if (err && !(err instanceof ZXing.NotFoundException)) {
-                        resultElement.textContent = `Error: ${err.message || err}`;
-                    }
-                });
-                resultElement.textContent = `Scanner ready for ${selectedAction === 'putaway' ? 'PUT AWAY' : 'SHIPMENT'}. Select customer, SKU, enter cases, and scan.`;
-            } catch (error) {
-                resultElement.textContent = `CRITICAL ERROR: Camera failed. ${error.name || ''}: ${error.message || error}. Please ensure browser has camera access.`;
-            }
-        }
-
-        // --- Event listeners ---
-        customerSelect.addEventListener('change', function() {
-            fetchSKUsForCustomer(customerSelect.value);
-            skuSelect.innerHTML = '<option value="">-- Select SKU --</option>'; // Reset SKU if customer changes
-        });
-
-        putawayButton.addEventListener('click', () => {
-            selectedAction = 'putaway';
-            startScanner();
-            resultElement.textContent = 'Ready to scan for PUT AWAY...';
-        });
-
-        shipButton.addEventListener('click', () => {
-            selectedAction = 'ship';
-            startScanner();
-            resultElement.textContent = 'Ready to scan for SHIPMENT...';
-        });
-
-        window.addEventListener('load', async () => {
-            await fetchCustomers();
-            skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
-            startScanner();
-        });
-
-        window.addEventListener('beforeunload', () => {
-            if (codeReader) {
-                codeReader.reset();
-            }
-        });
-    </script>
+    <!-- Place your own JavaScript here for app logic (scanner, etc) -->
 </body>
 </html>
