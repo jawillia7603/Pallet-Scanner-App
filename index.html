@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>22000 SC MC</title>
-
-    <!-- App Manifest and Icons (BUG only) -->
+    <!-- Manifest and icons -->
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" sizes="192x192" href="novo_logo_(bug) app.png">
     <link rel="apple-touch-icon" sizes="512x512" href="novo_logo_(bug) app.png">
@@ -13,7 +12,6 @@
     <meta name="theme-color" content="#192B55">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-capable" content="yes">
-
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -39,7 +37,6 @@
             text-align: center;
             margin-top: 0;
         }
-        /* Example input group styling */
         .input-group {
             margin-bottom: 14px;
             width: 92vw;
@@ -62,6 +59,73 @@
             width: 100%;
             box-sizing: border-box;
         }
+        #video-container {
+            width: 92vw;
+            max-width: 340px;
+            aspect-ratio: 4/3;
+            margin-bottom: 18px;
+            border: 1px solid #ddd;
+            background-color: black;
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        #scanner-overlay {
+            position: absolute;
+            top: 15%; left: 15%;
+            width: 70%; height: 70%;
+            border: 3px solid #2850A0;
+            box-sizing: border-box;
+            pointer-events: none;
+            border-radius: 5px;
+            animation: pulse-border 1.5s infinite alternate;
+        }
+        @keyframes pulse-border {
+            from { border-color: #2850A0; }
+            to { border-color: #F37121; }
+        }
+        #flash-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,255,0,0.25);
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.12s, visibility 0.12s;
+            z-index: 100;
+        }
+        #flash-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        #button-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            color: white;
+            font-weight: bold;
+            min-width: 140px;
+        }
+        #putawayButton { background-color: #192B55; }
+        #putawayButton:hover { background-color: #2850A0; }
+        #shipButton { background-color: #F37121; }
+        #shipButton:hover { background-color: #e0681d; }
         #result {
             margin-top: 13px;
             font-size: 1.08em;
@@ -81,11 +145,10 @@
     </style>
 </head>
 <body>
-    <!-- Vertical logo at the top of the app -->
+    <div id="flash-overlay"></div>
     <img id="app-logo" src="novo_logo_(vertical).png" alt="Novo Logistics">
     <h1>22000 SC MC Pallet Scanner</h1>
 
-    <!-- Example input groups for your actual app -->
     <div class="input-group">
         <label for="customerSelect">Select Customer:</label>
         <select id="customerSelect">
@@ -99,15 +162,252 @@
         </select>
     </div>
     <div class="input-group">
+        <label for="binSelect">Select Bin:</label>
+        <select id="binSelect">
+            <option value="">Loading bins...</option>
+        </select>
+    </div>
+    <div class="input-group">
         <label for="caseCountInput">Case Count:</label>
         <input type="number" id="caseCountInput" placeholder="Enter case count" min="1">
     </div>
-
-    <!-- Example result message -->
+    <div id="video-container">
+        <video id="barcodeScanner" playsinline></video>
+        <div id="scanner-overlay"></div>
+    </div>
+    <div id="button-container">
+        <button id="putawayButton">Put Away Pallet</button>
+        <button id="shipButton">Ship Pallet</button>
+    </div>
     <div id="result">Scan a barcode...</div>
 
-    <!-- Your app’s scripts here -->
+    <!-- ZXing barcode scanning library -->
     <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
-    <!-- Place your own JavaScript here for app logic (scanner, etc) -->
+    <script>
+        // Proxy & backend
+        const CORS_PROXY = "https://api.allorigins.win/raw?url=";
+        const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBTHjmHbZ0E4pNacZe-pf140DpudXWGHXl-7pBeGPfnnW27LDRSemuojqwilP5qY1h/exec';
+
+        // UI Elements
+        const video = document.getElementById('barcodeScanner');
+        const resultElement = document.getElementById('result');
+        const putawayButton = document.getElementById('putawayButton');
+        const shipButton = document.getElementById('shipButton');
+        const customerSelect = document.getElementById('customerSelect');
+        const skuSelect = document.getElementById('skuSelect');
+        const binSelect = document.getElementById('binSelect');
+        const caseCountInput = document.getElementById('caseCountInput');
+        const flashOverlay = document.getElementById('flash-overlay');
+
+        let codeReader; // ZXing reader instance
+        let scannerEnabled = false;
+        let selectedAction = 'putaway';
+
+        function playBeep() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    const audioCtx = new AudioContext();
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+
+                    oscillator.start(audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    oscillator.stop(audioCtx.currentTime + 0.3);
+                }
+            } catch (e) { }
+        }
+        function triggerFlash() {
+            flashOverlay.classList.add('active');
+            setTimeout(() => {
+                flashOverlay.classList.remove('active');
+            }, 150);
+        }
+
+        // Data fetching for dropdowns
+        async function fetchCustomers() {
+            customerSelect.innerHTML = '<option value="">Loading customers...</option>';
+            try {
+                const url = CORS_PROXY + encodeURIComponent(`${GOOGLE_SHEET_WEB_APP_URL}?action=getCustomers`);
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.status === "success" && data.data) {
+                    customerSelect.innerHTML = '<option value="">-- Select Customer --</option>';
+                    data.data.forEach(customer => {
+                        const option = document.createElement('option');
+                        option.value = customer;
+                        option.textContent = customer;
+                        customerSelect.appendChild(option);
+                    });
+                } else {
+                    customerSelect.innerHTML = '<option value="">Error loading customers</option>';
+                }
+            } catch (error) {
+                customerSelect.innerHTML = '<option value="">Error loading customers</option>';
+            }
+        }
+        async function fetchSKUsForCustomer(customerName) {
+            skuSelect.innerHTML = '<option value="">Loading SKUs...</option>';
+            if (!customerName) {
+                skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
+                return;
+            }
+            try {
+                const url = CORS_PROXY + encodeURIComponent(
+                    `${GOOGLE_SHEET_WEB_APP_URL}?action=getSKUsForCustomer&customer=${encodeURIComponent(customerName)}`
+                );
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.status === "success" && data.data && data.data.length > 0) {
+                    skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
+                    data.data.forEach(sku => {
+                        const option = document.createElement('option');
+                        option.value = sku;
+                        option.textContent = sku;
+                        skuSelect.appendChild(option);
+                    });
+                } else {
+                    skuSelect.innerHTML = '<option value="">No SKUs for this customer</option>';
+                }
+            } catch (error) {
+                skuSelect.innerHTML = '<option value="">Error loading SKUs</option>';
+            }
+        }
+        async function fetchBins() {
+            binSelect.innerHTML = '<option value="">Loading bins...</option>';
+            try {
+                const url = CORS_PROXY + encodeURIComponent(`${GOOGLE_SHEET_WEB_APP_URL}?action=getBins`);
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.status === "success" && data.data) {
+                    binSelect.innerHTML = '';
+                    data.data.forEach(bin => {
+                        const option = document.createElement('option');
+                        option.value = bin;
+                        option.textContent = bin;
+                        binSelect.appendChild(option);
+                    });
+                } else {
+                    binSelect.innerHTML = '<option value="Bulk">Bulk</option>';
+                }
+            } catch (error) {
+                binSelect.innerHTML = '<option value="Bulk">Bulk</option>';
+            }
+        }
+
+        // Scanner logic with robust controls
+        async function startScanner() {
+            if (codeReader) codeReader.reset();
+            scannerEnabled = true;
+            try {
+                resultElement.textContent = 'Initializing camera...';
+                codeReader = new ZXing.BrowserMultiFormatReader();
+                await codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+                    if (!scannerEnabled) return;
+                    if (result) {
+                        scannerEnabled = false; // prevent duplicate triggers
+                        const scannedPallet = result.text;
+                        const customerName = customerSelect.value;
+                        const sku = skuSelect.value;
+                        const bin = binSelect.value;
+                        const caseCount = parseInt(caseCountInput.value, 10);
+
+                        if (!customerName) {
+                            resultElement.textContent = 'Please select a customer!';
+                            scannerEnabled = true; // allow another scan
+                            return;
+                        }
+                        if (!sku) {
+                            resultElement.textContent = 'Please select a SKU!';
+                            scannerEnabled = true;
+                            return;
+                        }
+                        if (!bin) {
+                            resultElement.textContent = 'Please select a bin!';
+                            scannerEnabled = true;
+                            return;
+                        }
+                        if (isNaN(caseCount) || caseCount <= 0) {
+                            resultElement.textContent = 'Please enter a valid case count (>0)!';
+                            scannerEnabled = true;
+                            return;
+                        }
+
+                        codeReader.reset();
+                        resultElement.textContent = `Scanned: ${scannedPallet} for ${customerName} (${sku}, Bin: ${bin}, ${caseCount} cases). Processing...`;
+                        playBeep();
+                        triggerFlash();
+
+                        sendToGoogleSheet(scannedPallet, customerName, sku, bin, caseCount, selectedAction);
+
+                        setTimeout(() => {
+                            scannerEnabled = true;
+                            resultElement.textContent = 'Ready for next scan. Click a button to scan again.';
+                        }, 900); // brief pause before next scan can happen
+                    }
+                    if (err && !(err instanceof ZXing.NotFoundException)) {
+                        resultElement.textContent = `Error: ${err.message || err}`;
+                    }
+                });
+                resultElement.textContent = `Scanner ready for ${selectedAction === 'putaway' ? 'PUT AWAY' : 'SHIPMENT'}. Select customer, SKU, bin, cases, and scan.`;
+            } catch (error) {
+                resultElement.textContent = `CRITICAL ERROR: Camera failed. ${error.name || ''}: ${error.message || error}. Please ensure browser has camera access.`;
+            }
+        }
+
+        async function sendToGoogleSheet(palletNumber, customerName, sku, bin, caseCount, action) {
+            try {
+                const body = `palletNumber=${encodeURIComponent(palletNumber)}&customer=${encodeURIComponent(customerName)}&sku=${encodeURIComponent(sku)}&bin=${encodeURIComponent(bin)}&caseCount=${encodeURIComponent(caseCount)}&action=${encodeURIComponent(action)}`;
+                const url = CORS_PROXY + encodeURIComponent(GOOGLE_SHEET_WEB_APP_URL);
+                await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body,
+                });
+                resultElement.textContent = `${action === 'putaway' ? 'Put away' : 'Shipped'}: ${palletNumber} for ${customerName} (${sku}, Bin: ${bin}, ${caseCount} cases). Check Sheet.`;
+
+                // Clear inputs for next scan
+                caseCountInput.value = '';
+                skuSelect.selectedIndex = 0;
+                customerSelect.selectedIndex = 0;
+                binSelect.selectedIndex = 0;
+            } catch (error) {
+                resultElement.textContent = `Failed to send data for ${palletNumber}. Error: ${error.message}`;
+            }
+        }
+
+        customerSelect.addEventListener('change', function() {
+            fetchSKUsForCustomer(this.value);
+        });
+
+        putawayButton.addEventListener('click', () => {
+            selectedAction = 'putaway';
+            startScanner();
+            resultElement.textContent = 'Ready to scan for PUT AWAY...';
+        });
+
+        shipButton.addEventListener('click', () => {
+            selectedAction = 'ship';
+            startScanner();
+            resultElement.textContent = 'Ready to scan for SHIPMENT...';
+        });
+
+        window.addEventListener('load', async () => {
+            await fetchCustomers();
+            await fetchBins();
+        });
+
+        // Optional: Cleanup scanner on unload
+        window.addEventListener('beforeunload', () => {
+            if (codeReader) codeReader.reset();
+        });
+    </script>
 </body>
 </html>
