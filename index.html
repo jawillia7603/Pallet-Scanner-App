@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>22000 SC MC</title>
-    <!-- Manifest and icons -->
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" sizes="192x192" href="novo_logo_(bug) app.png">
     <link rel="apple-touch-icon" sizes="512x512" href="novo_logo_(bug) app.png">
@@ -182,11 +181,8 @@
     </div>
     <div id="result">Scan a barcode...</div>
 
-    <!-- ZXing barcode scanning library -->
     <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
     <script>
-        // Proxy for GETs only (leave for dropdowns)
-        const CORS_PROXY = "https://api.allorigins.win/raw?url=";
         const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxswJvyjLTLSHUJc6uCxwrubNY7_L-h9f-2YgrPD6VuvKIkgl1HYHZjha-oENU0uv1O/exec';
 
         // UI Elements
@@ -200,7 +196,7 @@
         const caseCountInput = document.getElementById('caseCountInput');
         const flashOverlay = document.getElementById('flash-overlay');
 
-        let codeReader; // ZXing reader instance
+        let codeReader;
         let scannerEnabled = false;
         let selectedAction = 'putaway';
 
@@ -211,20 +207,18 @@
                     const audioCtx = new AudioContext();
                     const oscillator = audioCtx.createOscillator();
                     const gainNode = audioCtx.createGain();
-
                     oscillator.connect(gainNode);
                     gainNode.connect(audioCtx.destination);
-
                     oscillator.type = 'sine';
                     oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
                     gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
-
                     oscillator.start(audioCtx.currentTime);
                     gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
                     oscillator.stop(audioCtx.currentTime + 0.3);
                 }
-            } catch (e) { }
+            } catch (e) { /* silent fail */ }
         }
+
         function triggerFlash() {
             flashOverlay.classList.add('active');
             setTimeout(() => {
@@ -232,185 +226,117 @@
             }, 150);
         }
 
-        // Data fetching for dropdowns (still uses proxy for GETs)
-        async function fetchCustomers() {
-            customerSelect.innerHTML = '<option value="">Loading customers...</option>';
+        async function fetchData(action, params = {}) {
+            let url = `${GOOGLE_SHEET_WEB_APP_URL}?action=${action}`;
+            for (const key in params) {
+                url += `&${key}=${encodeURIComponent(params[key])}`;
+            }
             try {
-                const url = CORS_PROXY + encodeURIComponent(`${GOOGLE_SHEET_WEB_APP_URL}?action=getCustomers`);
                 const response = await fetch(url);
+                if (!response.ok) throw new Error(`Network Error: ${response.status}`);
                 const data = await response.json();
-                if (data.status === "success" && data.data) {
-                    customerSelect.innerHTML = '<option value="">-- Select Customer --</option>';
-                    data.data.forEach(customer => {
-                        const option = document.createElement('option');
-                        option.value = customer;
-                        option.textContent = customer;
-                        customerSelect.appendChild(option);
-                    });
-                } else {
-                    customerSelect.innerHTML = '<option value="">Error loading customers</option>';
-                }
+                if (data.status !== "success") throw new Error(data.message);
+                return data.data;
             } catch (error) {
-                customerSelect.innerHTML = '<option value="">Error loading customers</option>';
+                console.error(`Error fetching ${action}:`, error);
+                resultElement.textContent = 'Error loading data from server.';
+                return [];
             }
         }
-        async function fetchSKUsForCustomer(customerName) {
-            skuSelect.innerHTML = '<option value="">Loading SKUs...</option>';
+        
+        async function populateCustomers() {
+            const customers = await fetchData('getCustomers');
+            customerSelect.innerHTML = '<option value="">-- Select Customer --</option>';
+            customers.forEach(c => customerSelect.add(new Option(c, c)));
+        }
+
+        async function populateBins() {
+            const bins = await fetchData('getBins');
+            binSelect.innerHTML = '<option value="">-- Select Bin --</option>';
+            bins.forEach(b => binSelect.add(new Option(b, b)));
+        }
+        
+        async function populateSKUs(customerName) {
+            skuSelect.innerHTML = '<option value="">Loading...</option>';
             if (!customerName) {
                 skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
                 return;
             }
-            try {
-                const url = CORS_PROXY + encodeURIComponent(
-                    `${GOOGLE_SHEET_WEB_APP_URL}?action=getSKUsForCustomer&customer=${encodeURIComponent(customerName)}`
-                );
-                const response = await fetch(url);
-                const data = await response.json();
-                if (data.status === "success" && data.data && data.data.length > 0) {
-                    skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
-                    data.data.forEach(sku => {
-                        const option = document.createElement('option');
-                        option.value = sku;
-                        option.textContent = sku;
-                        skuSelect.appendChild(option);
-                    });
-                } else {
-                    skuSelect.innerHTML = '<option value="">No SKUs for this customer</option>';
-                }
-            } catch (error) {
-                skuSelect.innerHTML = '<option value="">Error loading SKUs</option>';
-            }
-        }
-        async function fetchBins() {
-            binSelect.innerHTML = '<option value="">Loading bins...</option>';
-            try {
-                const url = CORS_PROXY + encodeURIComponent(`${GOOGLE_SHEET_WEB_APP_URL}?action=getBins`);
-                const response = await fetch(url);
-                const data = await response.json();
-                if (data.status === "success" && data.data) {
-                    binSelect.innerHTML = '';
-                    data.data.forEach(bin => {
-                        const option = document.createElement('option');
-                        option.value = bin;
-                        option.textContent = bin;
-                        binSelect.appendChild(option);
-                    });
-                } else {
-                    binSelect.innerHTML = '<option value="Bulk">Bulk</option>';
-                }
-            } catch (error) {
-                binSelect.innerHTML = '<option value="Bulk">Bulk</option>';
+            const skus = await fetchData('getSKUsForCustomer', { customer: customerName });
+            skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
+            if (skus && skus.length > 0) {
+                skus.forEach(sku => skuSelect.add(new Option(sku, sku)));
+            } else {
+                skuSelect.innerHTML = '<option value="">No SKUs found</option>';
             }
         }
 
-        // Scanner logic with robust controls
         async function startScanner() {
+            if (!customerSelect.value || !skuSelect.value || !binSelect.value || !caseCountInput.value) {
+                resultElement.textContent = 'Please fill all fields.';
+                return;
+            }
             if (codeReader) codeReader.reset();
             scannerEnabled = true;
+            resultElement.textContent = 'Initializing camera...';
+            codeReader = new ZXing.BrowserMultiFormatReader();
             try {
-                resultElement.textContent = 'Initializing camera...';
-                codeReader = new ZXing.BrowserMultiFormatReader();
-                await codeReader.decodeFromVideoDevice(null, video, (result, err) => {
-                    if (!scannerEnabled) return;
-                    if (result) {
-                        scannerEnabled = false; // prevent duplicate triggers
-                        const scannedPallet = result.text;
-                        const customerName = customerSelect.value;
-                        const sku = skuSelect.value;
-                        const bin = binSelect.value;
-                        const caseCount = parseInt(caseCountInput.value, 10);
-
-                        if (!customerName) {
-                            resultElement.textContent = 'Please select a customer!';
-                            scannerEnabled = true; // allow another scan
-                            return;
-                        }
-                        if (!sku) {
-                            resultElement.textContent = 'Please select a SKU!';
-                            scannerEnabled = true;
-                            return;
-                        }
-                        if (!bin) {
-                            resultElement.textContent = 'Please select a bin!';
-                            scannerEnabled = true;
-                            return;
-                        }
-                        if (isNaN(caseCount) || caseCount <= 0) {
-                            resultElement.textContent = 'Please enter a valid case count (>0)!';
-                            scannerEnabled = true;
-                            return;
-                        }
-
-                        codeReader.reset();
-                        resultElement.textContent = `Scanned: ${scannedPallet} for ${customerName} (${sku}, Bin: ${bin}, ${caseCount} cases). Processing...`;
-                        playBeep();
-                        triggerFlash();
-
-                        sendToGoogleSheet(scannedPallet, customerName, sku, bin, caseCount, selectedAction);
-
-                        setTimeout(() => {
-                            scannerEnabled = true;
-                            resultElement.textContent = 'Ready for next scan. Click a button to scan again.';
-                        }, 900); // brief pause before next scan can happen
-                    }
-                    if (err && !(err instanceof ZXing.NotFoundException)) {
-                        resultElement.textContent = `Error: ${err.message || err}`;
-                    }
-                });
-                resultElement.textContent = `Scanner ready for ${selectedAction === 'putaway' ? 'PUT AWAY' : 'SHIPMENT'}. Select customer, SKU, bin, cases, and scan.`;
+                const result = await codeReader.decodeFromVideoDevice(undefined, video);
+                if (scannerEnabled && result) {
+                    scannerEnabled = false;
+                    codeReader.reset();
+                    playBeep();
+                    triggerFlash();
+                    sendToGoogleSheet(result.text, customerSelect.value, skuSelect.value, binSelect.value, caseCountInput.value, selectedAction);
+                }
             } catch (error) {
-                resultElement.textContent = `CRITICAL ERROR: Camera failed. ${error.name || ''}: ${error.message || error}. Please ensure browser has camera access.`;
+                resultElement.textContent = `Camera Error: ${error.message}`;
             }
         }
 
-        // FIXED: Send POST DIRECTLY to Google Apps Script (not via CORS proxy)
-        async function sendToGoogleSheet(palletNumber, customerName, sku, bin, caseCount, action) {
+        async function sendToGoogleSheet(palletNumber, customer, sku, bin, caseCount, action) {
+            resultElement.textContent = `Processing ${palletNumber}...`;
             try {
-                const body = `palletNumber=${encodeURIComponent(palletNumber)}&customer=${encodeURIComponent(customerName)}&sku=${encodeURIComponent(sku)}&bin=${encodeURIComponent(bin)}&caseCount=${encodeURIComponent(caseCount)}&action=${encodeURIComponent(action)}`;
-                const url = GOOGLE_SHEET_WEB_APP_URL;
-                const response = await fetch(url, {
+                const body = new URLSearchParams({ palletNumber, customer, sku, bin, caseCount, action });
+                const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: body,
                 });
-                const text = await response.text();
-                resultElement.textContent = `${action === 'putaway' ? 'Put away' : 'Shipped'}: ${palletNumber} for ${customerName} (${sku}, Bin: ${bin}, ${caseCount} cases). Check Sheet.`;
-                // Debugging/log:
-                console.log("POSTed to Google Apps Script, response:", text);
-
-                // Clear inputs for next scan
-                caseCountInput.value = '';
-                skuSelect.selectedIndex = 0;
-                customerSelect.selectedIndex = 0;
-                binSelect.selectedIndex = 0;
+                const data = await response.json();
+                resultElement.textContent = data.message;
+                if (data.status === 'success') {
+                    caseCountInput.value = '';
+                }
+                setTimeout(() => {
+                    scannerEnabled = true;
+                    resultElement.textContent = 'Ready for next scan.';
+                }, 2000);
             } catch (error) {
-                resultElement.textContent = `Failed to send data for ${palletNumber}. Error: ${error.message}`;
-                console.error(error);
+                resultElement.textContent = `Error sending data: ${error.message}`;
             }
         }
 
+        // Event Listeners
         customerSelect.addEventListener('change', function() {
-            fetchSKUsForCustomer(this.value);
+            populateSKUs(this.value);
         });
 
         putawayButton.addEventListener('click', () => {
             selectedAction = 'putaway';
             startScanner();
-            resultElement.textContent = 'Ready to scan for PUT AWAY...';
         });
 
         shipButton.addEventListener('click', () => {
             selectedAction = 'ship';
             startScanner();
-            resultElement.textContent = 'Ready to scan for SHIPMENT...';
         });
 
         window.addEventListener('load', async () => {
-            await fetchCustomers();
-            await fetchBins();
+            resultElement.textContent = 'Loading initial data...';
+            await Promise.all([populateCustomers(), populateBins()]);
+            resultElement.textContent = 'Ready.';
         });
-
-        // Optional: Cleanup scanner on unload
+        
         window.addEventListener('beforeunload', () => {
             if (codeReader) codeReader.reset();
         });
