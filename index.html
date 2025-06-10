@@ -183,70 +183,83 @@
       }
     }
 
-    // Handler for putaway action
-    async function handlePutaway() {
-      if (!lastScannedText) {
-        resultElement.textContent = 'No barcode scanned.';
-        return;
-      }
-      const customer = customerSelect.value;
-      const sku = skuSelect.value;
-      const bin = binSelect.value;
-      const caseCount = caseCountInput.value;
-      if (!customer || !sku || !bin || !caseCount) {
-        resultElement.textContent = 'Please fill in all fields before proceeding.';
-        return;
-      }
-      resultElement.textContent = 'Processing put away...';
-      // Batch parameters in a single network call
-      const params = {
-        type: 'putaway',
-        barcode: lastScannedText,
-        customer: customer,
-        sku: sku,
-        bin: bin,
-        caseCount: caseCount
-      };
-      try {
-        const response = await fetchData('processPallet', params);
-        resultElement.textContent = response.message || 'Pallet processed successfully.';
-      } catch (error) {
-        console.error('Putaway Error:', error);
-        resultElement.textContent = 'Error processing put away.';
-      }
-    }
+   // Handler for putaway action
+async function handlePutaway() {
+  if (!lastScannedText) {
+    resultElement.textContent = 'No barcode scanned.';
+    return;
+  }
+  const customer = customerSelect.value;
+  const sku = skuSelect.value;
+  const bin = binSelect.value;
+  const caseCount = caseCountInput.value;
+  if (!customer || !sku || !bin || !caseCount) {
+    resultElement.textContent = 'Please fill in all fields before proceeding.';
+    return;
+  }
+  resultElement.textContent = 'Processing put away...';
+  const body = new URLSearchParams({
+    action: 'putaway',
+    palletNumber: lastScannedText,
+    customer,
+    sku,
+    bin,
+    caseCount
+  });
+  try {
+    const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+      method: 'POST',
+      body: body
+    });
+    const data = await response.json();
+    resultElement.textContent = data.message || 'Pallet processed successfully.';
+  } catch (error) {
+    console.error('Putaway Error:', error);
+    resultElement.textContent = 'Error processing put away.';
+  }
+}
 
-    // Handler for ship action
-    async function handleShip() {
-      if (!lastScannedText) {
-        resultElement.textContent = 'No barcode scanned.';
-        return;
-      }
-      const customer = customerSelect.value;
-      const sku = skuSelect.value;
-      const bin = binSelect.value;
-      const caseCount = caseCountInput.value;
-      if (!customer || !sku || !bin || !caseCount) {
-        resultElement.textContent = 'Please fill in all fields before proceeding.';
-        return;
-      }
-      resultElement.textContent = 'Processing shipment...';
-      const params = {
-        type: 'ship',
-        barcode: lastScannedText,
-        customer: customer,
-        sku: sku,
-        bin: bin,
-        caseCount: caseCount
-      };
-      try {
-        const response = await fetchData('processPallet', params);
-        resultElement.textContent = response.message || 'Pallet shipped successfully.';
-      } catch (error) {
-        console.error('Ship Error:', error);
-        resultElement.textContent = 'Error processing shipment.';
-      }
-    }
+// Handler for ship action
+async function handleShip() {
+  if (!lastScannedText) {
+    resultElement.textContent = 'No barcode scanned.';
+    return;
+  }
+  const customer = customerSelect.value;
+  const sku = skuSelect.value;
+  const bin = binSelect.value;
+  const caseCount = caseCountInput.value;
+  if (!customer || !sku || !bin || !caseCount) {
+    resultElement.textContent = 'Please fill in all fields before proceeding.';
+    return;
+  }
+  resultElement.textContent = 'Processing shipment...';
+  const body = new URLSearchParams({
+    action: 'ship',
+    palletNumber: lastScannedText,
+    customer,
+    sku,
+    bin,
+    caseCount
+  });
+  try {
+    const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+      method: 'POST',
+      body: body
+    });
+    const data = await response.json();
+    resultElement.textContent = data.message || 'Pallet shipped successfully.';
+  } catch (error) {
+    console.error('Ship Error:', error);
+    resultElement.textContent = 'Error processing shipment.';
+  }
+}
+
+// ... event listeners (unchanged)
+putawayButton.addEventListener('click', handlePutaway);
+shipButton.addEventListener('click', handleShip);
+customerSelect.addEventListener('change', (e) => populateSKUs(e.target.value));
+
 
     // Event listeners
     putawayButton.addEventListener('click', handlePutaway);
