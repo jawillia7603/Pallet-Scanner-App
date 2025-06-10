@@ -182,164 +182,174 @@
     <div id="result">Scan a barcode...</div>
 
     <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
-    <script>
-        const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbys9dDOzEc5IgwqWTSlcXr0HTzXH0Rg_Xl4VSaEWF66J3Owz3nYk2xkDubBnUY_Oidb/exec';
+<script>
+const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx7VvuEVQo2gBjjdQt2-94M4qcpxjujxwe6EfzBP24qXw__yEhTUUG6dAeoaaGunxo/exec';
 
-        // UI Elements
-        const video = document.getElementById('barcodeScanner');
-        const resultElement = document.getElementById('result');
-        const putawayButton = document.getElementById('putawayButton');
-        const shipButton = document.getElementById('shipButton');
-        const customerSelect = document.getElementById('customerSelect');
-        const skuSelect = document.getElementById('skuSelect');
-        const binSelect = document.getElementById('binSelect');
-        const caseCountInput = document.getElementById('caseCountInput');
-        const flashOverlay = document.getElementById('flash-overlay');
+// UI Elements
+const video = document.getElementById('barcodeScanner');
+const resultElement = document.getElementById('result');
+const putawayButton = document.getElementById('putawayButton');
+const shipButton = document.getElementById('shipButton');
+const customerSelect = document.getElementById('customerSelect');
+const skuSelect = document.getElementById('skuSelect');
+const binSelect = document.getElementById('binSelect');
+const caseCountInput = document.getElementById('caseCountInput');
+const flashOverlay = document.getElementById('flash-overlay');
 
-        let codeReader;
-        let scannerEnabled = false;
-        let selectedAction = 'putaway';
+let codeReader;
+let scannerEnabled = false;
+let selectedAction = 'putaway';
 
-        function playBeep() {
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) {
-                    const audioCtx = new AudioContext();
-                    const oscillator = audioCtx.createOscillator();
-                    const gainNode = audioCtx.createGain();
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-                    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
-                    oscillator.start(audioCtx.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-                    oscillator.stop(audioCtx.currentTime + 0.3);
-                }
-            } catch (e) { /* silent fail */ }
+function playBeep() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            const audioCtx = new AudioContext();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+            oscillator.start(audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+            oscillator.stop(audioCtx.currentTime + 0.3);
         }
+    } catch (e) { /* silent fail */ }
+}
 
-        function triggerFlash() {
-            flashOverlay.classList.add('active');
-            setTimeout(() => {
-                flashOverlay.classList.remove('active');
-            }, 150);
-        }
+function triggerFlash() {
+    flashOverlay.classList.add('active');
+    setTimeout(() => {
+        flashOverlay.classList.remove('active');
+    }, 150);
+}
 
-        async function fetchData(action, params = {}) {
-            let url = `${GOOGLE_SHEET_WEB_APP_URL}?action=${action}`;
-            for (const key in params) {
-                url += `&${key}=${encodeURIComponent(params[key])}`;
-            }
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Network Error: ${response.status}`);
-                const data = await response.json();
-                if (data.status !== "success") throw new Error(data.message);
-                return data.data;
-            } catch (error) {
-                console.error(`Error fetching ${action}:`, error);
-                resultElement.textContent = 'Error loading data from server.';
-                return [];
-            }
-        }
-        
-        async function populateCustomers() {
-            const customers = await fetchData('getCustomers');
-            customerSelect.innerHTML = '<option value="">-- Select Customer --</option>';
-            customers.forEach(c => customerSelect.add(new Option(c, c)));
-        }
+async function fetchData(action, params = {}) {
+    let url = `${GOOGLE_SHEET_WEB_APP_URL}?action=${action}`;
+    for (const key in params) {
+        url += `&${key}=${encodeURIComponent(params[key])}`;
+    }
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Network Error: ${response.status}`);
+        const data = await response.json();
+        if (data.status !== "success") throw new Error(data.message);
+        return data.data;
+    } catch (error) {
+        console.error(`Error fetching ${action}:`, error);
+        resultElement.textContent = 'Error loading data from server.';
+        return [];
+    }
+}
 
-        async function populateBins() {
-            const bins = await fetchData('getBins');
-            binSelect.innerHTML = '<option value="">-- Select Bin --</option>';
-            bins.forEach(b => binSelect.add(new Option(b, b)));
-        }
-        
-        async function populateSKUs(customerName) {
-            skuSelect.innerHTML = '<option value="">Loading...</option>';
-            if (!customerName) {
-                skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
-                return;
-            }
-            const skus = await fetchData('getSKUsForCustomer', { customer: customerName });
-            skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
-            if (skus && skus.length > 0) {
-                skus.forEach(sku => skuSelect.add(new Option(sku, sku)));
-            } else {
-                skuSelect.innerHTML = '<option value="">No SKUs found</option>';
-            }
-        }
+async function populateCustomers() {
+    const customers = await fetchData('getCustomers');
+    customerSelect.innerHTML = '<option value="">-- Select Customer --</option>';
+    customers.forEach(c => customerSelect.add(new Option(c, c)));
+}
 
-        async function startScanner() {
-            if (!customerSelect.value || !skuSelect.value || !binSelect.value || !caseCountInput.value) {
-                resultElement.textContent = 'Please fill all fields.';
-                return;
-            }
-            if (codeReader) codeReader.reset();
+async function populateBins() {
+    const bins = await fetchData('getBins');
+    binSelect.innerHTML = '<option value="">-- Select Bin --</option>';
+    bins.forEach(b => binSelect.add(new Option(b, b)));
+}
+
+async function populateSKUs(customerName) {
+    skuSelect.innerHTML = '<option value="">Loading...</option>';
+    if (!customerName) {
+        skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
+        return;
+    }
+    const skus = await fetchData('getSKUsForCustomer', { customer: customerName });
+    skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
+    if (skus && skus.length > 0) {
+        skus.forEach(sku => skuSelect.add(new Option(sku, sku)));
+    } else {
+        skuSelect.innerHTML = '<option value="">No SKUs found</option>';
+    }
+}
+
+// MAIN BARCODE SCANNING FUNCTION (fixed for iPhone & ZXing v0.19.1+)
+async function startScanner() {
+    if (!customerSelect.value || !skuSelect.value || !binSelect.value || !caseCountInput.value) {
+        resultElement.textContent = 'Please fill all fields.';
+        return;
+    }
+    if (codeReader) codeReader.reset();
+    scannerEnabled = true;
+    resultElement.textContent = 'Initializing camera...';
+    codeReader = new ZXing.BrowserMultiFormatReader();
+    try {
+        // Use decodeOnceFromVideoDevice for best cross-browser compatibility
+        const result = await codeReader.decodeOnceFromVideoDevice(undefined, video);
+        if (scannerEnabled && result) {
+            scannerEnabled = false;
+            codeReader.reset();
+            playBeep();
+            triggerFlash();
+            sendToGoogleSheet(
+                result.text,
+                customerSelect.value,
+                skuSelect.value,
+                binSelect.value,
+                caseCountInput.value,
+                selectedAction
+            );
+        }
+    } catch (error) {
+        resultElement.textContent = `Camera Error: ${error.message}`;
+    }
+}
+
+async function sendToGoogleSheet(palletNumber, customer, sku, bin, caseCount, action) {
+    resultElement.textContent = `Processing ${palletNumber}...`;
+    try {
+        const body = new URLSearchParams({ palletNumber, customer, sku, bin, caseCount, action });
+        const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+            method: 'POST',
+            body: body,
+        });
+        const data = await response.json();
+        resultElement.textContent = data.message;
+        if (data.status === 'success') {
+            caseCountInput.value = '';
+        }
+        setTimeout(() => {
             scannerEnabled = true;
-            resultElement.textContent = 'Initializing camera...';
-            codeReader = new ZXing.BrowserMultiFormatReader();
-            try {
-                const result = await codeReader.decodeFromVideoDevice(undefined, video);
-                if (scannerEnabled && result) {
-                    scannerEnabled = false;
-                    codeReader.reset();
-                    playBeep();
-                    triggerFlash();
-                    sendToGoogleSheet(result.text, customerSelect.value, skuSelect.value, binSelect.value, caseCountInput.value, selectedAction);
-                }
-            } catch (error) {
-                resultElement.textContent = `Camera Error: ${error.message}`;
-            }
-        }
+            resultElement.textContent = 'Ready for next scan.';
+        }, 2000);
+    } catch (error) {
+        resultElement.textContent = `Error sending data: ${error.message}`;
+    }
+}
 
-        async function sendToGoogleSheet(palletNumber, customer, sku, bin, caseCount, action) {
-            resultElement.textContent = `Processing ${palletNumber}...`;
-            try {
-                const body = new URLSearchParams({ palletNumber, customer, sku, bin, caseCount, action });
-                const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
-                    method: 'POST',
-                    body: body,
-                });
-                const data = await response.json();
-                resultElement.textContent = data.message;
-                if (data.status === 'success') {
-                    caseCountInput.value = '';
-                }
-                setTimeout(() => {
-                    scannerEnabled = true;
-                    resultElement.textContent = 'Ready for next scan.';
-                }, 2000);
-            } catch (error) {
-                resultElement.textContent = `Error sending data: ${error.message}`;
-            }
-        }
+// Event Listeners
+customerSelect.addEventListener('change', function() {
+    populateSKUs(this.value);
+});
 
-        // Event Listeners
-        customerSelect.addEventListener('change', function() {
-            populateSKUs(this.value);
-        });
+putawayButton.addEventListener('click', () => {
+    selectedAction = 'putaway';
+    startScanner();
+});
 
-        putawayButton.addEventListener('click', () => {
-            selectedAction = 'putaway';
-            startScanner();
-        });
+shipButton.addEventListener('click', () => {
+    selectedAction = 'ship';
+    startScanner();
+});
 
-        shipButton.addEventListener('click', () => {
-            selectedAction = 'ship';
-            startScanner();
-        });
+window.addEventListener('load', async () => {
+    resultElement.textContent = 'Loading initial data...';
+    await Promise.all([populateCustomers(), populateBins()]);
+    resultElement.textContent = 'Ready.';
+});
 
-        window.addEventListener('load', async () => {
-            resultElement.textContent = 'Loading initial data...';
-            await Promise.all([populateCustomers(), populateBins()]);
-            resultElement.textContent = 'Ready.';
-        });
-        
-        window.addEventListener('beforeunload', () => {
-            if (codeReader) codeReader.reset();
-        });
-    </script>
+window.addEventListener('beforeunload', () => {
+    if (codeReader) codeReader.reset();
+});
+</script>
+
 </body>
 </html>
