@@ -196,8 +196,7 @@
         const caseCountInput = document.getElementById('caseCountInput');
         const flashOverlay = document.getElementById('flash-overlay');
 
-        let codeReader;
-        let scannerEnabled = false;
+        let codeReader; // Declared here to be accessible in finally/beforeunload
         let selectedAction = 'putaway';
 
         function playBeep() {
@@ -270,30 +269,40 @@
                 skuSelect.innerHTML = '<option value="">No SKUs found</option>';
             }
         }
-
+        
+        // This is the corrected diagnostic function for a single, reliable scan.
         async function startScanner() {
             if (!customerSelect.value || !skuSelect.value || !binSelect.value || !caseCountInput.value) {
-                resultElement.textContent = 'Please fill all fields.';
+                resultElement.textContent = 'Please fill all fields before scanning.';
                 return;
             }
-            if (codeReader) codeReader.reset();
-            scannerEnabled = true;
             resultElement.textContent = 'Initializing camera...';
             codeReader = new ZXing.BrowserMultiFormatReader();
             try {
+                // This is the correct function for library version 0.19.1
                 const result = await codeReader.decodeFromVideoDevice(undefined, video);
-                if (scannerEnabled && result) {
-                    scannerEnabled = false;
-                    codeReader.reset();
-                    playBeep();
-                    triggerFlash();
-                    sendToGoogleSheet(result.text, customerSelect.value, skuSelect.value, binSelect.value, caseCountInput.value, selectedAction);
-                }
+                resultElement.textContent = `Found barcode: ${result.text}`;
+                playBeep();
+                triggerFlash();
+                // Await the Google Sheet function to ensure it completes
+                await sendToGoogleSheet(result.text, customerSelect.value, skuSelect.value, binSelect.value, caseCountInput.value, selectedAction);
             } catch (error) {
-                resultElement.textContent = `Camera Error: ${error.message}`;
+                if (error instanceof ZXing.NotFoundException) {
+                    resultElement.textContent = 'No barcode found in frame.';
+                } else if (error instanceof DOMException && error.name === "NotAllowedError") {
+                    resultElement.textContent = 'Error: Camera permission was denied. Please allow camera access.';
+                } else {
+                    resultElement.textContent = `An error occurred: ${error.message}`;
+                    console.error(error);
+                }
+            } finally {
+                // reset() is the correct way to stop the camera for this method
+                codeReader.reset();
+                console.log("Scanner resources have been released.");
             }
         }
 
+        // This function sends data and does not control the scanner
         async function sendToGoogleSheet(palletNumber, customer, sku, bin, caseCount, action) {
             resultElement.textContent = `Processing ${palletNumber}...`;
             try {
@@ -307,10 +316,6 @@
                 if (data.status === 'success') {
                     caseCountInput.value = '';
                 }
-                setTimeout(() => {
-                    scannerEnabled = true;
-                    resultElement.textContent = 'Ready for next scan.';
-                }, 2000);
             } catch (error) {
                 resultElement.textContent = `Error sending data: ${error.message}`;
             }
@@ -338,7 +343,9 @@
         });
         
         window.addEventListener('beforeunload', () => {
-            if (codeReader) codeReader.reset();
+            if (codeReader) {
+                codeReader.reset();
+            }
         });
     </script>
 </body>
