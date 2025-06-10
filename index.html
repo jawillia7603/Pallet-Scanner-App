@@ -91,8 +91,6 @@
     let codeReader = null; // ZXing code reader instance
     let lastScannedText = null; // Store last scanned barcode
 
-    // V8 optimizations: Using async/await and minimizing DOM updates
-
     function playBeep() {
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -117,7 +115,6 @@
       setTimeout(() => flashOverlay.classList.remove('active'), 150);
     }
 
-    // Batch network calls using a common fetch function
     async function fetchData(action, params = {}) {
       let url = `${GOOGLE_SHEET_WEB_APP_URL}?action=${action}`;
       for (const key in params) {
@@ -159,20 +156,17 @@
       skus.forEach(sku => skuSelect.add(new Option(sku, sku)));
     }
 
-    // Initiate the camera scanning using ZXing with proper error handling
     async function startScanner() {
       try {
         codeReader = new ZXing.BrowserMultiFormatReader();
         const selectedDeviceId = null; // null uses default camera
         await codeReader.decodeFromVideoDevice(selectedDeviceId, video, (result, error) => {
           if (result) {
-            // Store the scanned text and provide visual feedback
             lastScannedText = result.getText();
             resultElement.textContent = `Scanned: ${lastScannedText}`;
             playBeep();
             triggerFlash();
           } else if (error && !(error instanceof ZXing.NotFoundException)) {
-            // Only log errors that are not 'no barcode found'
             console.error('Scanner Error:', error);
             resultElement.textContent = 'Camera Error: ' + error.message;
           }
@@ -182,84 +176,96 @@
         resultElement.textContent = 'Camera Error: ' + err.message;
       }
     }
+    
+    /**
+     * Resets the form for the next scan after a successful operation.
+     * Keeps the customer selected but clears all other fields and the scanned barcode.
+     * @param {string} message - The success message to display.
+     */
+    function resetForNextScan(message) {
+      // The customer selection is intentionally not reset here.
+      skuSelect.selectedIndex = 0; // Reset SKU dropdown to the first option
+      binSelect.selectedIndex = 0; // Reset Bin dropdown to the first option
+      caseCountInput.value = ''; // Clear the case count input
+      lastScannedText = null; // Clear the stored barcode to force a new scan
+      
+      // Update the result text to show success and prompt the user for the next scan.
+      resultElement.textContent = `${message} Ready for the next scan.`;
+    }
 
-   // Handler for putaway action
-async function handlePutaway() {
-  if (!lastScannedText) {
-    resultElement.textContent = 'No barcode scanned.';
-    return;
-  }
-  const customer = customerSelect.value;
-  const sku = skuSelect.value;
-  const bin = binSelect.value;
-  const caseCount = caseCountInput.value;
-  if (!customer || !sku || !bin || !caseCount) {
-    resultElement.textContent = 'Please fill in all fields before proceeding.';
-    return;
-  }
-  resultElement.textContent = 'Processing put away...';
-  const body = new URLSearchParams({
-    action: 'putaway',
-    palletNumber: lastScannedText,
-    customer,
-    sku,
-    bin,
-    caseCount
-  });
-  try {
-    const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
-      method: 'POST',
-      body: body
-    });
-    const data = await response.json();
-    resultElement.textContent = data.message || 'Pallet processed successfully.';
-  } catch (error) {
-    console.error('Putaway Error:', error);
-    resultElement.textContent = 'Error processing put away.';
-  }
-}
+    // Handler for putaway action
+    async function handlePutaway() {
+      if (!lastScannedText) {
+        resultElement.textContent = 'No barcode scanned.';
+        return;
+      }
+      const customer = customerSelect.value;
+      const sku = skuSelect.value;
+      const bin = binSelect.value;
+      const caseCount = caseCountInput.value;
+      if (!customer || !sku || !bin || !caseCount) {
+        resultElement.textContent = 'Please fill in all fields before proceeding.';
+        return;
+      }
+      resultElement.textContent = 'Processing put away...';
+      const body = new URLSearchParams({
+        action: 'putaway',
+        palletNumber: lastScannedText,
+        customer,
+        sku,
+        bin,
+        caseCount
+      });
+      try {
+        const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+          method: 'POST',
+          body: body
+        });
+        const data = await response.json();
+        // Call the new reset function on success
+        resetForNextScan(data.message || 'Pallet processed successfully.');
+      } catch (error) {
+        console.error('Putaway Error:', error);
+        resultElement.textContent = 'Error processing put away.';
+      }
+    }
 
-// Handler for ship action
-async function handleShip() {
-  if (!lastScannedText) {
-    resultElement.textContent = 'No barcode scanned.';
-    return;
-  }
-  const customer = customerSelect.value;
-  const sku = skuSelect.value;
-  const bin = binSelect.value;
-  const caseCount = caseCountInput.value;
-  if (!customer || !sku || !bin || !caseCount) {
-    resultElement.textContent = 'Please fill in all fields before proceeding.';
-    return;
-  }
-  resultElement.textContent = 'Processing shipment...';
-  const body = new URLSearchParams({
-    action: 'ship',
-    palletNumber: lastScannedText,
-    customer,
-    sku,
-    bin,
-    caseCount
-  });
-  try {
-    const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
-      method: 'POST',
-      body: body
-    });
-    const data = await response.json();
-    resultElement.textContent = data.message || 'Pallet shipped successfully.';
-  } catch (error) {
-    console.error('Ship Error:', error);
-    resultElement.textContent = 'Error processing shipment.';
-  }
-}
-
-// ... event listeners (unchanged)
-putawayButton.addEventListener('click', handlePutaway);
-shipButton.addEventListener('click', handleShip);
-customerSelect.addEventListener('change', (e) => populateSKUs(e.target.value));
-
+    // Handler for ship action
+    async function handleShip() {
+      if (!lastScannedText) {
+        resultElement.textContent = 'No barcode scanned.';
+        return;
+      }
+      const customer = customerSelect.value;
+      const sku = skuSelect.value;
+      const bin = binSelect.value;
+      const caseCount = caseCountInput.value;
+      if (!customer || !sku || !bin || !caseCount) {
+        resultElement.textContent = 'Please fill in all fields before proceeding.';
+        return;
+      }
+      resultElement.textContent = 'Processing shipment...';
+      const body = new URLSearchParams({
+        action: 'ship',
+        palletNumber: lastScannedText,
+        customer,
+        sku,
+        bin,
+        caseCount
+      });
+      try {
+        const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+          method: 'POST',
+          body: body
+        });
+        const data = await response.json();
+        // Call the new reset function on success
+        resetForNextScan(data.message || 'Pallet shipped successfully.');
+      } catch (error) {
+        console.error('Ship Error:', error);
+        resultElement.textContent = 'Error processing shipment.';
+      }
+    }
 
     // Event listeners
     putawayButton.addEventListener('click', handlePutaway);
