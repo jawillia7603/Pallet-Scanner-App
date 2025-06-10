@@ -1,352 +1,263 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>22000 SC MC</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" sizes="192x192" href="novo_logo_(bug) app.png">
-    <link rel="apple-touch-icon" sizes="512x512" href="novo_logo_(bug) app.png">
-    <link rel="icon" href="novo_logo_(bug) app.png" type="image/png">
-    <meta name="theme-color" content="#192B55">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-        #app-logo {
-            max-width: 120px;
-            width: 60vw;
-            height: auto;
-            margin: 22px auto 10px auto;
-            display: block;
-        }
-        h1 {
-            color: #192B55;
-            margin-bottom: 20px;
-            font-size: 1.3em;
-            text-align: center;
-            margin-top: 0;
-        }
-        .input-group {
-            margin-bottom: 14px;
-            width: 92vw;
-            max-width: 340px;
-            display: flex;
-            flex-direction: column;
-        }
-        .input-group label {
-            margin-bottom: 3px;
-            font-weight: bold;
-            color: #192B55;
-        }
-        .input-group select,
-        .input-group input[type="number"] {
-            padding: 11px 12px;
-            font-size: 1.08em;
-            border: 1px solid #ced4da;
-            border-radius: 6px;
-            background: #fff;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        #video-container {
-            width: 92vw;
-            max-width: 340px;
-            aspect-ratio: 4/3;
-            margin-bottom: 18px;
-            border: 1px solid #ddd;
-            background-color: black;
-            position: relative;
-            overflow: hidden;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        #scanner-overlay {
-            position: absolute;
-            top: 15%; left: 15%;
-            width: 70%; height: 70%;
-            border: 3px solid #2850A0;
-            box-sizing: border-box;
-            pointer-events: none;
-            border-radius: 5px;
-            animation: pulse-border 1.5s infinite alternate;
-        }
-        @keyframes pulse-border {
-            from { border-color: #2850A0; }
-            to { border-color: #F37121; }
-        }
-        #flash-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            background: rgba(0,255,0,0.25);
-            opacity: 0; visibility: hidden;
-            transition: opacity 0.12s, visibility 0.12s;
-            z-index: 100;
-        }
-        #flash-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        #button-container {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        button {
-            padding: 12px 25px;
-            font-size: 1.1em;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
-            color: white;
-            font-weight: bold;
-            min-width: 140px;
-        }
-        #putawayButton { background-color: #192B55; }
-        #putawayButton:hover { background-color: #2850A0; }
-        #shipButton { background-color: #F37121; }
-        #shipButton:hover { background-color: #e0681d; }
-        #result {
-            margin-top: 13px;
-            font-size: 1.08em;
-            text-align: center;
-            color: #444;
-            background: #e9e9e9;
-            border-radius: 7px;
-            width: 92vw;
-            max-width: 340px;
-            min-height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.07);
-            padding: 10px 7px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>22000 SC MC</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" sizes="192x192" href="novo_logo_(bug) app.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="novo_logo_(bug) app.png">
+  <link rel="icon" href="novo_logo_(bug) app.png" type="image/png">
+  <meta name="theme-color" content="#192B55">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <style>
+    /* Styles remain the same for layout and theming */
+    body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; background-color: #f4f4f4; color: #333; }
+    #app-logo { max-width: 120px; width: 60vw; height: auto; margin: 22px auto 10px auto; display: block; }
+    h1 { color: #192B55; margin-bottom: 20px; font-size: 1.3em; text-align: center; margin-top: 0; }
+    .input-group { margin-bottom: 14px; width: 92vw; max-width: 340px; display: flex; flex-direction: column; }
+    .input-group label { margin-bottom: 3px; font-weight: bold; color: #192B55; }
+    .input-group select,
+    .input-group input[type="number"] { padding: 11px 12px; font-size: 1.08em; border: 1px solid #ced4da; border-radius: 6px; background: #fff; width: 100%; box-sizing: border-box; }
+    #video-container { width: 92vw; max-width: 340px; aspect-ratio: 4/3; margin-bottom: 18px; border: 1px solid #ddd; background-color: black; position: relative; overflow: hidden; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    #scanner-overlay { position: absolute; top: 15%; left: 15%; width: 70%; height: 70%; border: 3px solid #2850A0; box-sizing: border-box; pointer-events: none; border-radius: 5px; animation: pulse-border 1.5s infinite alternate; }
+    @keyframes pulse-border { from { border-color: #2850A0; } to { border-color: #F37121; } }
+    #flash-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,255,0,0.25); opacity: 0; visibility: hidden; transition: opacity 0.12s, visibility 0.12s; z-index: 100; }
+    #flash-overlay.active { opacity: 1; visibility: visible; }
+    #button-container { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+    button { padding: 12px 25px; font-size: 1.1em; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s, transform 0.1s; color: white; font-weight: bold; min-width: 140px; }
+    #putawayButton { background-color: #192B55; }
+    #putawayButton:hover { background-color: #2850A0; }
+    #shipButton { background-color: #F37121; }
+    #shipButton:hover { background-color: #e0681d; }
+    #result { margin-top: 13px; font-size: 1.08em; text-align: center; color: #444; background: #e9e9e9; border-radius: 7px; width: 92vw; max-width: 340px; min-height: 38px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 3px rgba(0,0,0,0.07); padding: 10px 7px; }
+  </style>
 </head>
 <body>
-    <div id="flash-overlay"></div>
-    <img id="app-logo" src="novo_logo_(vertical).png" alt="Novo Logistics">
-    <h1>22000 SC MC Pallet Scanner</h1>
+  <div id="flash-overlay"></div>
+  <img id="app-logo" src="novo_logo_(vertical).png" alt="Novo Logistics">
+  <h1>22000 SC MC Pallet Scanner</h1>
 
-    <div class="input-group">
-        <label for="customerSelect">Select Customer:</label>
-        <select id="customerSelect">
-            <option value="">Loading customers...</option>
-        </select>
-    </div>
-    <div class="input-group">
-        <label for="skuSelect">Select SKU:</label>
-        <select id="skuSelect">
-            <option value="">-- Select SKU --</option>
-        </select>
-    </div>
-    <div class="input-group">
-        <label for="binSelect">Select Bin:</label>
-        <select id="binSelect">
-            <option value="">Loading bins...</option>
-        </select>
-    </div>
-    <div class="input-group">
-        <label for="caseCountInput">Case Count:</label>
-        <input type="number" id="caseCountInput" placeholder="Enter case count" min="1">
-    </div>
-    <div id="video-container">
-        <video id="barcodeScanner" playsinline></video>
-        <div id="scanner-overlay"></div>
-    </div>
-    <div id="button-container">
-        <button id="putawayButton">Put Away Pallet</button>
-        <button id="shipButton">Ship Pallet</button>
-    </div>
-    <div id="result">Scan a barcode...</div>
+  <div class="input-group">
+    <label for="customerSelect">Select Customer:</label>
+    <select id="customerSelect">
+      <option value="">Loading customers...</option>
+    </select>
+  </div>
+  <div class="input-group">
+    <label for="skuSelect">Select SKU:</label>
+    <select id="skuSelect">
+      <option value="">-- Select SKU --</option>
+    </select>
+  </div>
+  <div class="input-group">
+    <label for="binSelect">Select Bin:</label>
+    <select id="binSelect">
+      <option value="">Loading bins...</option>
+    </select>
+  </div>
+  <div class="input-group">
+    <label for="caseCountInput">Case Count:</label>
+    <input type="number" id="caseCountInput" placeholder="Enter case count" min="1">
+  </div>
+  <div id="video-container">
+    <video id="barcodeScanner" playsinline></video>
+    <div id="scanner-overlay"></div>
+  </div>
+  <div id="button-container">
+    <button id="putawayButton">Put Away Pallet</button>
+    <button id="shipButton">Ship Pallet</button>
+  </div>
+  <div id="result">Scan a barcode...</div>
 
-    <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
-    <script>
-        const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbys9dDOzEc5IgwqWTSlcXr0HTzXH0Rg_Xl4VSaEWF66J3Owz3nYk2xkDubBnUY_Oidb/exec';
+  <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+  <script>
+    const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbys9dDOzEc5IgwqWTSlcXr0HTzXH0Rg_Xl4VSaEWF66J3Owz3nYk2xkDubBnUY_Oidb/exec';
 
-        // UI Elements
-        const video = document.getElementById('barcodeScanner');
-        const resultElement = document.getElementById('result');
-        const putawayButton = document.getElementById('putawayButton');
-        const shipButton = document.getElementById('shipButton');
-        const customerSelect = document.getElementById('customerSelect');
-        const skuSelect = document.getElementById('skuSelect');
-        const binSelect = document.getElementById('binSelect');
-        const caseCountInput = document.getElementById('caseCountInput');
-        const flashOverlay = document.getElementById('flash-overlay');
+    // UI Elements
+    const video = document.getElementById('barcodeScanner');
+    const resultElement = document.getElementById('result');
+    const putawayButton = document.getElementById('putawayButton');
+    const shipButton = document.getElementById('shipButton');
+    const customerSelect = document.getElementById('customerSelect');
+    const skuSelect = document.getElementById('skuSelect');
+    const binSelect = document.getElementById('binSelect');
+    const caseCountInput = document.getElementById('caseCountInput');
+    const flashOverlay = document.getElementById('flash-overlay');
 
-        let codeReader; // Declared here to be accessible in finally/beforeunload
-        let selectedAction = 'putaway';
+    let codeReader = null; // ZXing code reader instance
+    let lastScannedText = null; // Store last scanned barcode
 
-        function playBeep() {
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) {
-                    const audioCtx = new AudioContext();
-                    const oscillator = audioCtx.createOscillator();
-                    const gainNode = audioCtx.createGain();
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-                    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
-                    oscillator.start(audioCtx.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-                    oscillator.stop(audioCtx.currentTime + 0.3);
-                }
-            } catch (e) { /* silent fail */ }
+    // V8 optimizations: Using async/await and minimizing DOM updates
+
+    function playBeep() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          const audioCtx = new AudioContext();
+          const oscillator = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+          gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+          oscillator.start();
+          gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+          oscillator.stop(audioCtx.currentTime + 0.3);
         }
+      } catch (e) { /* silent fail */ }
+    }
 
-        function triggerFlash() {
-            flashOverlay.classList.add('active');
-            setTimeout(() => {
-                flashOverlay.classList.remove('active');
-            }, 150);
-        }
+    function triggerFlash() {
+      flashOverlay.classList.add('active');
+      setTimeout(() => flashOverlay.classList.remove('active'), 150);
+    }
 
-        async function fetchData(action, params = {}) {
-            let url = `${GOOGLE_SHEET_WEB_APP_URL}?action=${action}`;
-            for (const key in params) {
-                url += `&${key}=${encodeURIComponent(params[key])}`;
-            }
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Network Error: ${response.status}`);
-                const data = await response.json();
-                if (data.status !== "success") throw new Error(data.message);
-                return data.data;
-            } catch (error) {
-                console.error(`Error fetching ${action}:`, error);
-                resultElement.textContent = 'Error loading data from server.';
-                return [];
-            }
-        }
-        
-        async function populateCustomers() {
-            const customers = await fetchData('getCustomers');
-            customerSelect.innerHTML = '<option value="">-- Select Customer --</option>';
-            customers.forEach(c => customerSelect.add(new Option(c, c)));
-        }
+    // Batch network calls using a common fetch function
+    async function fetchData(action, params = {}) {
+      let url = `${GOOGLE_SHEET_WEB_APP_URL}?action=${action}`;
+      for (const key in params) {
+        url += `&${key}=${encodeURIComponent(params[key])}`;
+      }
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Network Error: ${response.status}`);
+        const data = await response.json();
+        if (data.status !== 'success') throw new Error(data.message);
+        return data.data;
+      } catch (error) {
+        console.error(`Error fetching ${action}:`, error);
+        resultElement.textContent = 'Error loading data from server.';
+        return [];
+      }
+    }
 
-        async function populateBins() {
-            const bins = await fetchData('getBins');
-            binSelect.innerHTML = '<option value="">-- Select Bin --</option>';
-            bins.forEach(b => binSelect.add(new Option(b, b)));
-        }
-        
-        async function populateSKUs(customerName) {
-            skuSelect.innerHTML = '<option value="">Loading...</option>';
-            if (!customerName) {
-                skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
-                return;
-            }
-            const skus = await fetchData('getSKUsForCustomer', { customer: customerName });
-            skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
-            if (skus && skus.length > 0) {
-                skus.forEach(sku => skuSelect.add(new Option(sku, sku)));
-            } else {
-                skuSelect.innerHTML = '<option value="">No SKUs found</option>';
-            }
-        }
-        
-        // This is the corrected diagnostic function for a single, reliable scan.
-        async function startScanner() {
-            if (!customerSelect.value || !skuSelect.value || !binSelect.value || !caseCountInput.value) {
-                resultElement.textContent = 'Please fill all fields before scanning.';
-                return;
-            }
-            resultElement.textContent = 'Initializing camera...';
-            codeReader = new ZXing.BrowserMultiFormatReader();
-            try {
-                // This is the correct function for library version 0.19.1
-                const result = await codeReader.decodeFromVideoDevice(undefined, video);
-                resultElement.textContent = `Found barcode: ${result.text}`;
-                playBeep();
-                triggerFlash();
-                // Await the Google Sheet function to ensure it completes
-                await sendToGoogleSheet(result.text, customerSelect.value, skuSelect.value, binSelect.value, caseCountInput.value, selectedAction);
-            } catch (error) {
-                if (error instanceof ZXing.NotFoundException) {
-                    resultElement.textContent = 'No barcode found in frame.';
-                } else if (error instanceof DOMException && error.name === "NotAllowedError") {
-                    resultElement.textContent = 'Error: Camera permission was denied. Please allow camera access.';
-                } else {
-                    resultElement.textContent = `An error occurred: ${error.message}`;
-                    console.error(error);
-                }
-            } finally {
-                // reset() is the correct way to stop the camera for this method
-                codeReader.reset();
-                console.log("Scanner resources have been released.");
-            }
-        }
+    async function populateCustomers() {
+      const customers = await fetchData('getCustomers');
+      customerSelect.innerHTML = '<option value="">-- Select Customer --</option>';
+      customers.forEach(cust => customerSelect.add(new Option(cust, cust)));
+    }
 
-        // This function sends data and does not control the scanner
-        async function sendToGoogleSheet(palletNumber, customer, sku, bin, caseCount, action) {
-            resultElement.textContent = `Processing ${palletNumber}...`;
-            try {
-                const body = new URLSearchParams({ palletNumber, customer, sku, bin, caseCount, action });
-                const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
-                    method: 'POST',
-                    body: body,
-                });
-                const data = await response.json();
-                resultElement.textContent = data.message;
-                if (data.status === 'success') {
-                    caseCountInput.value = '';
-                }
-            } catch (error) {
-                resultElement.textContent = `Error sending data: ${error.message}`;
-            }
-        }
+    async function populateBins() {
+      const bins = await fetchData('getBins');
+      binSelect.innerHTML = '<option value="">-- Select Bin --</option>';
+      bins.forEach(bin => binSelect.add(new Option(bin, bin)));
+    }
 
-        // Event Listeners
-        customerSelect.addEventListener('change', function() {
-            populateSKUs(this.value);
+    async function populateSKUs(customerName) {
+      skuSelect.innerHTML = '<option value="">Loading...</option>';
+      if (!customerName) {
+        skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
+        return;
+      }
+      const skus = await fetchData('getSKUsForCustomer', { customer: customerName });
+      skuSelect.innerHTML = '<option value="">-- Select SKU --</option>';
+      skus.forEach(sku => skuSelect.add(new Option(sku, sku)));
+    }
+
+    // Initiate the camera scanning using ZXing with proper error handling
+    async function startScanner() {
+      try {
+        codeReader = new ZXing.BrowserMultiFormatReader();
+        const selectedDeviceId = null; // null uses default camera
+        await codeReader.decodeFromVideoDevice(selectedDeviceId, video, (result, error) => {
+          if (result) {
+            // Store the scanned text and provide visual feedback
+            lastScannedText = result.getText();
+            resultElement.textContent = `Scanned: ${lastScannedText}`;
+            playBeep();
+            triggerFlash();
+          } else if (error && !(error instanceof ZXing.NotFoundException)) {
+            // Only log errors that are not 'no barcode found'
+            console.error('Scanner Error:', error);
+            resultElement.textContent = 'Camera Error: ' + error.message;
+          }
         });
+      } catch (err) {
+        console.error('Error initializing scanner:', err);
+        resultElement.textContent = 'Camera Error: ' + err.message;
+      }
+    }
 
-        putawayButton.addEventListener('click', () => {
-            selectedAction = 'putaway';
-            startScanner();
-        });
+    // Handler for putaway action
+    async function handlePutaway() {
+      if (!lastScannedText) {
+        resultElement.textContent = 'No barcode scanned.';
+        return;
+      }
+      const customer = customerSelect.value;
+      const sku = skuSelect.value;
+      const bin = binSelect.value;
+      const caseCount = caseCountInput.value;
+      if (!customer || !sku || !bin || !caseCount) {
+        resultElement.textContent = 'Please fill in all fields before proceeding.';
+        return;
+      }
+      resultElement.textContent = 'Processing put away...';
+      // Batch parameters in a single network call
+      const params = {
+        type: 'putaway',
+        barcode: lastScannedText,
+        customer: customer,
+        sku: sku,
+        bin: bin,
+        caseCount: caseCount
+      };
+      try {
+        const response = await fetchData('processPallet', params);
+        resultElement.textContent = response.message || 'Pallet processed successfully.';
+      } catch (error) {
+        console.error('Putaway Error:', error);
+        resultElement.textContent = 'Error processing put away.';
+      }
+    }
 
-        shipButton.addEventListener('click', () => {
-            selectedAction = 'ship';
-            startScanner();
-        });
+    // Handler for ship action
+    async function handleShip() {
+      if (!lastScannedText) {
+        resultElement.textContent = 'No barcode scanned.';
+        return;
+      }
+      const customer = customerSelect.value;
+      const sku = skuSelect.value;
+      const bin = binSelect.value;
+      const caseCount = caseCountInput.value;
+      if (!customer || !sku || !bin || !caseCount) {
+        resultElement.textContent = 'Please fill in all fields before proceeding.';
+        return;
+      }
+      resultElement.textContent = 'Processing shipment...';
+      const params = {
+        type: 'ship',
+        barcode: lastScannedText,
+        customer: customer,
+        sku: sku,
+        bin: bin,
+        caseCount: caseCount
+      };
+      try {
+        const response = await fetchData('processPallet', params);
+        resultElement.textContent = response.message || 'Pallet shipped successfully.';
+      } catch (error) {
+        console.error('Ship Error:', error);
+        resultElement.textContent = 'Error processing shipment.';
+      }
+    }
 
-        window.addEventListener('load', async () => {
-            resultElement.textContent = 'Loading initial data...';
-            await Promise.all([populateCustomers(), populateBins()]);
-            resultElement.textContent = 'Ready.';
-        });
-        
-        window.addEventListener('beforeunload', () => {
-            if (codeReader) {
-                codeReader.reset();
-            }
-        });
-    </script>
+    // Event listeners
+    putawayButton.addEventListener('click', handlePutaway);
+    shipButton.addEventListener('click', handleShip);
+    customerSelect.addEventListener('change', (e) => populateSKUs(e.target.value));
+
+    // Initialize data and scanner
+    (async function init() {
+      await Promise.all([populateCustomers(), populateBins()]);
+      startScanner();
+    })();
+  </script>
 </body>
 </html>
